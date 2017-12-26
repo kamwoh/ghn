@@ -1,0 +1,2 @@
+from tf_mnist_net_bn import MnistNetBN
+from tf_mnist_net_ghd import MnistNetGHD
