@@ -1,7 +1,7 @@
 import numpy as np
 from keras.datasets import mnist
 
-from nets.tf_mnist_net_ghd import MnistNetGHD
+from nets.tf_ghd import MnistNetGHD
 
 
 def main():
