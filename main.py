@@ -30,8 +30,11 @@ def main():
     #############
     # mnist net #
     #############
-    net = MnistNetGHD(0.1, batch_size=1000, input_shape=[28, 28, 1])
-    net.train(1000, X_train, Y_train, X_val, Y_val)
+    net = MnistNetGHD(lr=0.1,
+                      batch_size=1,
+                      input_shape=[28, 28, 1],
+                      with_relu=False)
+    net.train(10, X_train, Y_train, X_val, Y_val)
 
 
 if __name__ == '__main__':

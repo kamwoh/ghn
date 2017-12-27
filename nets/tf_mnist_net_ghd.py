@@ -4,8 +4,8 @@ from tf_mnist_net_interface import MnistNet
 
 
 class MnistNetGHD(MnistNet):
-    def conv_ghd(self, inputs, filters, kernel_size, name, with_ghd=True):
-        conv_weight = tf.get_variable(name=name + 'weight',
+    def conv_ghd(self, inputs, filters, kernel_size, name, with_ghd=True, with_relu=True):
+        conv_weight = tf.get_variable(name=name + 'weights',
                                       shape=[kernel_size[0], kernel_size[0], inputs.shape.as_list()[-1], filters],
                                       dtype=tf.float32,
                                       initializer=tf.glorot_normal_initializer(4567),
@@ -29,11 +29,11 @@ class MnistNetGHD(MnistNet):
             mean_w = tf.reduce_mean(conv_weight, axis=(0, 1, 2), keep_dims=True)
 
             hout = (2. / l) * conv - mean_w - mean_x
-            hout = tf.nn.relu(0.5 + hout)
+            hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
             return hout
         else:
-            conv_bias = tf.get_variable(name=name + '_bias',
+            conv_bias = tf.get_variable(name=name + '_biases',
                                         shape=[filters],
                                         dtype=tf.float32,
                                         initializer=tf.constant_initializer(0.1),
@@ -41,7 +41,7 @@ class MnistNetGHD(MnistNet):
                                         trainable=True)
 
             hout = conv + conv_bias
-            hout = tf.nn.relu(hout)
+            hout = tf.nn.relu(hout) if with_relu else hout
 
             return hout
 
@@ -51,7 +51,7 @@ class MnistNetGHD(MnistNet):
                                                           inputs.shape.as_list()[1:],
                                                           1)])
 
-        fc_weight = tf.get_variable(name=name + '_weight',
+        fc_weight = tf.get_variable(name=name + '_weights',
                                     shape=[inputs.shape.as_list()[1], out_units],
                                     dtype=tf.float32,
                                     initializer=tf.glorot_normal_initializer(1234),
@@ -66,11 +66,11 @@ class MnistNetGHD(MnistNet):
             mean_w = tf.reduce_mean(fc_weight, axis=0, keep_dims=True)
 
             hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
-            hout = tf.nn.relu(0.5 + hout)
+            hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
             return hout
         else:
-            fc_bias = tf.get_variable(name=name + '_bias',
+            fc_bias = tf.get_variable(name=name + '_biases',
                                       shape=[out_units],
                                       dtype=tf.float32,
                                       initializer=tf.constant_initializer(0.1),
@@ -82,7 +82,7 @@ class MnistNetGHD(MnistNet):
             hout = tf.nn.relu(hout) if with_relu else hout
             return hout
 
-    def __init__(self, lr=0.1, batch_size=256, input_shape=None):
+    def __init__(self, lr=0.1, batch_size=256, input_shape=None, with_relu=True):
         super(MnistNetGHD, self).__init__(lr, batch_size, input_shape)
 
         self.inputs = tf.placeholder(dtype=tf.float32,
@@ -90,13 +90,13 @@ class MnistNetGHD(MnistNet):
         self.labels = tf.placeholder(dtype=tf.int64,
                                      shape=[None, 1])
 
-        self.conv1 = self.conv_ghd(self.inputs, 16, [5, 5], name='conv1', with_ghd=True)
+        self.conv1 = self.conv_ghd(self.inputs, 16, [5, 5], name='conv1', with_ghd=True, with_relu=with_relu)
         self.pool1 = tf.layers.max_pooling2d(self.conv1, [2, 2], [2, 2], name='pool1')
-        self.conv2 = self.conv_ghd(self.pool1, 64, [5, 5], name='conv2', with_ghd=True)
+        self.conv2 = self.conv_ghd(self.pool1, 64, [5, 5], name='conv2', with_ghd=True, with_relu=with_relu)
         self.pool2 = tf.layers.max_pooling2d(self.conv2, [2, 2], [2, 2], name='pool2')
 
-        self.fc3 = self.fc_ghd(self.pool2, 1024, 'fc3', with_ghd=True)
-        self.fc4 = self.fc_ghd(self.fc3, 10, 'fc4', with_ghd=True)
+        self.fc3 = self.fc_ghd(self.pool2, 1024, 'fc3', with_ghd=True, with_relu=with_relu)
+        self.fc4 = self.fc_ghd(self.fc3, 10, 'fc4', with_ghd=True, with_relu=with_relu)
 
         self.accuracy = tf.metrics.accuracy(labels=self.labels,
                                             predictions=tf.argmax(self.fc4, axis=1))

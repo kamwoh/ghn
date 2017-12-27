@@ -30,11 +30,14 @@ class MnistNet(object):
                 Y = Y[indices]
 
                 steps = int(len(X) / self.batch_size)
+                curr_mini_batches = 0
                 avgloss = 0
                 avgacc = 0
                 for s in xrange(steps):
                     x = X[s * self.batch_size:(s + 1) * self.batch_size]
                     y = Y[s * self.batch_size:(s + 1) * self.batch_size]
+
+                    curr_mini_batches += self.batch_size
 
                     _, loss, acc = sess.run(
                         [self.train_op, self.loss, self.accuracy],
@@ -46,11 +49,13 @@ class MnistNet(object):
                     avgloss += loss
                     avgacc += acc[0]
 
-                    sys.stdout.write('\rtraining loss %s acc %s' % (loss, acc[0]))
+                    sys.stdout.write(
+                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc[0], curr_mini_batches, X.shape[0]))
 
                 avgloss /= steps
                 avgacc /= steps
-                sys.stdout.write('\rtraining loss %s acc %s' % (avgloss, avgacc))
+                sys.stdout.write(
+                    '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X.shape[0]))
                 print
 
                 steps = int(len(val_X) / self.batch_size)
