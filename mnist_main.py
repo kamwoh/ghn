@@ -13,6 +13,9 @@ def main():
     X_train = np.expand_dims(X_train, -1)
     Y_train = np.expand_dims(Y_train, -1)
 
+    X_test = np.expand_dims(X_test, -1) / 255.
+    Y_test = np.expand_dims(Y_test, -1)
+
     split = int(len(X_train) * 0.2)
     indices = np.arange(len(X_train))
     np.random.seed(np.random.randint(1000000))
@@ -34,7 +37,9 @@ def main():
                       batch_size=32,
                       input_shape=[28, 28, 1],
                       with_relu=True)
-    net.train(10, X_train, Y_train, X_val, Y_val)
+    net.train(1, X_train, Y_train, X_val, Y_val)
+    net.evaluate(X_test, Y_test)
+    net.close()
 
 
 if __name__ == '__main__':

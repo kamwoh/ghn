@@ -17,70 +17,100 @@ class MnistNet(object):
         self.loss = None
         self.accuracy = None
 
-    def train(self, epochs, X, Y, val_X, val_Y):
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            sess.run(tf.local_variables_initializer())
-            for e in xrange(epochs):
-                indices = np.arange(len(X))
-                np.random.seed(np.random.randint(1000000))
-                np.random.shuffle(indices)
+        self.sess = tf.Session()
 
-                X = X[indices]
-                Y = Y[indices]
+    def train(self, epochs, X_train, Y_train, X_val, Y_val):
+        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.local_variables_initializer())
+        for e in xrange(epochs):
+            indices = np.arange(len(X_train))
+            np.random.seed(np.random.randint(1000000))
+            np.random.shuffle(indices)
 
-                steps = int(len(X) / self.batch_size)
-                curr_mini_batches = 0
-                avgloss = 0
-                avgacc = 0
-                for s in xrange(steps):
-                    x = X[s * self.batch_size:(s + 1) * self.batch_size]
-                    y = Y[s * self.batch_size:(s + 1) * self.batch_size]
+            X_train = X_train[indices]
+            Y_train = Y_train[indices]
 
-                    curr_mini_batches += self.batch_size
+            steps = int(len(X_train) / self.batch_size)
+            curr_mini_batches = 0
+            avgloss = 0
+            avgacc = 0
+            for s in xrange(steps):
+                x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
+                y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
 
-                    _, loss, acc = sess.run(
-                        [self.train_op, self.loss, self.accuracy],
-                        feed_dict={
-                            self.inputs: x,
-                            self.labels: y
-                        })
+                curr_mini_batches += self.batch_size
 
-                    avgloss += loss
-                    avgacc += acc
+                _, loss, acc = self.sess.run(
+                    [self.train_op, self.loss, self.accuracy],
+                    feed_dict={
+                        self.inputs: x,
+                        self.labels: y
+                    })
 
-                    sys.stdout.write(
-                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X.shape[0]))
+                avgloss += loss
+                avgacc += acc
 
-                avgloss /= steps
-                avgacc /= steps
                 sys.stdout.write(
-                    '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X.shape[0]))
-                print
+                    '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
 
-                steps = int(len(val_X) / self.batch_size)
-                avgloss = 0
-                avgacc = 0
-                for s in xrange(steps):
-                    x = val_X[s * self.batch_size:(s + 1) * self.batch_size]
-                    y = val_Y[s * self.batch_size:(s + 1) * self.batch_size]
+            avgloss /= steps
+            avgacc /= steps
+            sys.stdout.write(
+                '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
+            print
 
-                    loss, acc = sess.run(
-                        [self.loss, self.accuracy],
-                        feed_dict={
-                            self.inputs: x,
-                            self.labels: y
-                        })
+            steps = int(len(X_val) / self.batch_size)
+            avgloss = 0
+            avgacc = 0
+            for s in xrange(steps):
+                x = X_val[s * self.batch_size:(s + 1) * self.batch_size]
+                y = Y_val[s * self.batch_size:(s + 1) * self.batch_size]
 
-                    avgloss += loss
-                    avgacc += acc
+                loss, acc = self.sess.run(
+                    [self.loss, self.accuracy],
+                    feed_dict={
+                        self.inputs: x,
+                        self.labels: y
+                    })
 
-                    sys.stdout.write('\rvalidation loss %s acc %s' % (loss, acc))
+                avgloss += loss
+                avgacc += acc
 
-                avgloss /= steps
-                avgacc /= steps
-                sys.stdout.write('\rvalidation loss %s acc %s' % (avgloss, avgacc))
-                print
+                sys.stdout.write('\rvalidation loss %s acc %s' % (loss, acc))
+
+            avgloss /= steps
+            avgacc /= steps
+            sys.stdout.write('\rvalidation loss %s acc %s' % (avgloss, avgacc))
+            print
+
+    def evaluate(self, X_test, Y_test):
+        steps = int(len(X_test) / self.batch_size)
+        avgloss = 0
+        avgacc = 0
+        for s in xrange(steps):
+            x = X_test[s * self.batch_size:(s + 1) * self.batch_size]
+            y = Y_test[s * self.batch_size:(s + 1) * self.batch_size]
+
+            loss, acc = self.sess.run(
+                [self.loss, self.accuracy],
+                feed_dict={
+                    self.inputs: x,
+                    self.labels: y
+                })
+
+            avgloss += loss
+            avgacc += acc
+
+            sys.stdout.write('\rtesting loss %s acc %s' % (loss, acc))
+
+        avgloss /= steps
+        avgacc /= steps
+        sys.stdout.write('\rtesting loss %s acc %s' % (avgloss, avgacc))
+        print
+
+    def close(self):
+        self.sess.close()
+
 
 def accuracy(y_pred, y_true):
     correct_prediction = tf.equal(y_pred, y_true)
