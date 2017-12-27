@@ -49,4 +49,4 @@ At the end of first epoch with `learning rate = 0.1, r = 0`, validation and test
 As stated in the paper, at `log(48000) = 4.68`, accuracy is around 97~98%
 
 ### Reference
-[1] Fan, L. (2017). Revisit Fuzzy Neural Network: Demystifying Batch Normalization and ReLU with Generalized Hamming Network (Unpublished master's thesis). Nokia Technologies Tampere, Finland.
+[1] Fan, L. (2017). Revisit Fuzzy Neural Network: Demystifying Batch Normalization and ReLU with Generalized Hamming Network. Nokia Technologies Tampere, Finland.
