@@ -1,7 +1,7 @@
 import numpy as np
 from keras.datasets import mnist
 
-from nets import *
+from nets.tf_mnist_net_ghd import MnistNetGHD
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
     net = MnistNetGHD(lr=0.1,
                       batch_size=1,
                       input_shape=[28, 28, 1],
-                      with_relu=False)
+                      with_relu=True)
     net.train(10, X_train, Y_train, X_val, Y_val)
 
 
