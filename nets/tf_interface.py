@@ -126,9 +126,21 @@ def accuracy(y_pred, y_true):
     return acc
 
 
+def double_thresholding(inputs, name):
+    r = tf.get_variable(name=name + '_r',
+                        shape=(),
+                        dtype=tf.float32,
+                        initializer=tf.glorot_normal_initializer(829),
+                        regularizer=None,
+                        trainable=True)
+    O = magnitude()
+    minimal_hd_thresh = 0.5 + r * O
+    return minimal_hd_thresh
+
+
 def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, fuzziness_relu=False):
-    conv_weight = tf.get_variable(name=name + 'weights',
-                                  shape=[kernel_size[0], kernel_size[0], inputs.shape.as_list()[-1], filters],
+    conv_weight = tf.get_variable(name=name + '_weights',
+                                  shape=[kernel_size[0], kernel_size[1], inputs.shape.as_list()[-1], filters],
                                   dtype=tf.float32,
                                   initializer=tf.glorot_normal_initializer(4567),
                                   regularizer=None,
@@ -147,23 +159,32 @@ def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, 
         # convolution way of mean, avg pool will produce [h, w, c]
         # and we need mean of a block [5,5,channel], so we take mean of avg pooled image at channel axis
         # output shape will be (batch, height, width, 1)
-        mean_x = tf.reduce_mean(tf.nn.avg_pool(inputs,
-                                               ksize=[1, kernel_size[0], kernel_size[1], 1],
-                                               strides=[1, 1, 1, 1],
-                                               padding='VALID'), axis=-1, keep_dims=True)
+
+        # mean_x = tf.reduce_mean(tf.nn.avg_pool(inputs,
+        #                                        ksize=[1, kernel_size[0], kernel_size[1], 1],
+        #                                        strides=[1, 1, 1, 1],
+        #                                        padding='VALID'), axis=-1, keep_dims=True)
+
+        # or it can be achieved by conv2d with constant weights
+        mean_weight = tf.get_variable(name=name + '_mean_weights',
+                                      shape=[kernel_size[0], kernel_size[1], inputs.shape.as_list()[-1], 1],
+                                      dtype=tf.float32,
+                                      initializer=tf.constant_initializer(1.0),
+                                      regularizer=None,
+                                      trainable=False)
+        mean_x = 1. / l * tf.nn.conv2d(inputs, mean_weight, strides=[1, 1, 1, 1],
+                                       padding='VALID',
+                                       name='mean_' + name)
 
         # mean for every filter, output shape will be (16,)
         mean_w = tf.reduce_mean(conv_weight, axis=(0, 1, 2), keep_dims=True)
+        hout = (2. / l) * conv - mean_w - mean_x
 
         if not fuzziness_relu:
             minimal_hd_thresh = 0.5
         else:
-            r = tf.get_variable(name='r',
-                                )
-            O = magnitude()
-            minimal_hd_thresh = 0.5 + r * O
+            minimal_hd_thresh = double_thresholding(hout, name)
 
-        hout = (2. / l) * conv - mean_w - mean_x
         hout = tf.nn.relu(minimal_hd_thresh + hout) if with_relu else hout
 
         return hout
@@ -203,15 +224,13 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
         mean_x = tf.reduce_mean(inputs, axis=1, keep_dims=True)
         mean_w = tf.reduce_mean(fc_weight, axis=0, keep_dims=True)
 
+        hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
+
         if not fuzziness_relu:
             minimal_hd_thresh = 0.5
         else:
-            r = tf.get_variable(name='r',
-                                )
-            O = magnitude()
-            minimal_hd_thresh = 0.5 + r * O
+            minimal_hd_thresh = double_thresholding(hout, name)
 
-        hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
         hout = tf.nn.relu(minimal_hd_thresh + hout) if with_relu else hout
 
         return hout
