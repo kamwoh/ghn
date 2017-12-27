@@ -31,7 +31,7 @@ def main():
     # mnist net #
     #############
     net = MnistNetGHD(lr=0.1,
-                      batch_size=1,
+                      batch_size=32,
                       input_shape=[28, 28, 1],
                       with_relu=True)
     net.train(10, X_train, Y_train, X_val, Y_val)

@@ -47,10 +47,10 @@ class MnistNet(object):
                         })
 
                     avgloss += loss
-                    avgacc += acc[0]
+                    avgacc += acc
 
                     sys.stdout.write(
-                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc[0], curr_mini_batches, X.shape[0]))
+                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X.shape[0]))
 
                 avgloss /= steps
                 avgacc /= steps
@@ -73,11 +73,16 @@ class MnistNet(object):
                         })
 
                     avgloss += loss
-                    avgacc += acc[0]
+                    avgacc += acc
 
-                    sys.stdout.write('\rvalidation loss %s acc %s' % (loss, acc[0]))
+                    sys.stdout.write('\rvalidation loss %s acc %s' % (loss, acc))
 
                 avgloss /= steps
                 avgacc /= steps
                 sys.stdout.write('\rvalidation loss %s acc %s' % (avgloss, avgacc))
                 print
+
+def accuracy(y_pred, y_true):
+    correct_prediction = tf.equal(y_pred, y_true)
+    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    return acc

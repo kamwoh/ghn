@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from tf_mnist_net_interface import MnistNet
+from tf_mnist_net_interface import MnistNet, accuracy
 
 
 class MnistNetGHD(MnistNet):
@@ -98,8 +98,8 @@ class MnistNetGHD(MnistNet):
         self.fc3 = self.fc_ghd(self.pool2, 1024, 'fc3', with_ghd=True, with_relu=with_relu)
         self.fc4 = self.fc_ghd(self.fc3, 10, 'fc4', with_ghd=True, with_relu=with_relu)
 
-        self.accuracy = tf.metrics.accuracy(labels=self.labels,
-                                            predictions=tf.argmax(self.fc4, axis=1))
+        self.accuracy = accuracy(y_true=tf.squeeze(self.labels, axis=1),
+                                 y_pred=tf.argmax(self.fc4, axis=1))
 
         self.loss = tf.losses.sparse_softmax_cross_entropy(labels=self.labels,
                                                            logits=self.fc4)
