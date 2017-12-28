@@ -1,5 +1,7 @@
 ## Implementation of Generalized Hamming Distance Network
 
+This is an re-implementation of the Generalized Hamming Distance Network published in NIPS 2017. 
+
 ### Requirements to run
 1. python 2.7
 2. keras (for dataset)
