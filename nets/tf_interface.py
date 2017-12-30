@@ -45,22 +45,22 @@ class Net(object):
                 curr_mini_batches += self.batch_size
 
                 _, loss, acc = self.sess.run(
-                    [self.train_op, self.loss, self.accuracy],
-                    feed_dict={
-                        self.inputs: x,
-                        self.labels: y
-                    })
+                        [self.train_op, self.loss, self.accuracy],
+                        feed_dict={
+                            self.inputs: x,
+                            self.labels: y
+                        })
 
                 avgloss += loss
                 avgacc += acc
 
                 sys.stdout.write(
-                    '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
+                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
 
             avgloss /= steps
             avgacc /= steps
             sys.stdout.write(
-                '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
+                    '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
             print
 
             steps = int(len(X_val) / self.batch_size)
@@ -71,11 +71,11 @@ class Net(object):
                 y = Y_val[s * self.batch_size:(s + 1) * self.batch_size]
 
                 loss, acc = self.sess.run(
-                    [self.loss, self.accuracy],
-                    feed_dict={
-                        self.inputs: x,
-                        self.labels: y
-                    })
+                        [self.loss, self.accuracy],
+                        feed_dict={
+                            self.inputs: x,
+                            self.labels: y
+                        })
 
                 avgloss += loss
                 avgacc += acc
@@ -96,11 +96,11 @@ class Net(object):
             y = Y_test[s * self.batch_size:(s + 1) * self.batch_size]
 
             loss, acc = self.sess.run(
-                [self.loss, self.accuracy],
-                feed_dict={
-                    self.inputs: x,
-                    self.labels: y
-                })
+                    [self.loss, self.accuracy],
+                    feed_dict={
+                        self.inputs: x,
+                        self.labels: y
+                    })
 
             avgloss += loss
             avgacc += acc
@@ -133,6 +133,12 @@ def double_thresholding(inputs, name):
                         initializer=tf.glorot_normal_initializer(829),
                         regularizer=None,
                         trainable=True)
+
+    rmin = tf.reduce_min(inputs, axis=0) * r
+    rmax = tf.reduce_max(inputs, axis=0) * r
+
+
+
     O = magnitude()
     minimal_hd_thresh = 0.5 + r * O
     return minimal_hd_thresh
