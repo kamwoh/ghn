@@ -133,20 +133,21 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
 
 
 def double_thresholding(inputs, name):
-    input_shape = inputs.shape.as_list()
-    r = tf.get_variable(name=name + '_r',
-                        shape=(),
-                        dtype=tf.float32,
-                        initializer=tf.glorot_normal_initializer(829),
-                        regularizer=None,
-                        trainable=True)
-
-    rmin = tf.reduce_min(inputs, axis=range(len(input_shape) - 1)) * r
-    rmax = tf.reduce_max(inputs, axis=range(len(input_shape) - 1)) * r
-
-    alpha = 0.1
-    # hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
-    hout = tf.clip_by_value(inputs, rmin, rmax)
+    hout = inputs
+    # input_shape = inputs.shape.as_list()
+    # r = tf.get_variable(name=name + '_r',
+    #                     shape=(),
+    #                     dtype=tf.float32,
+    #                     initializer=tf.glorot_normal_initializer(829),
+    #                     regularizer=None,
+    #                     trainable=True)
+    #
+    # rmin = tf.reduce_min(inputs, axis=range(len(input_shape) - 1)) * r
+    # rmax = tf.reduce_max(inputs, axis=range(len(input_shape) - 1)) * r
+    #
+    # alpha = 0.1
+    # # hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
+    # hout = tf.clip_by_value(inputs, rmin, rmax)
 
     return hout
 
