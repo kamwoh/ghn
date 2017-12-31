@@ -45,22 +45,22 @@ class Net(object):
                 curr_mini_batches += self.batch_size
 
                 _, loss, acc = self.sess.run(
-                        [self.train_op, self.loss, self.accuracy],
-                        feed_dict={
-                            self.inputs: x,
-                            self.labels: y
-                        })
+                    [self.train_op, self.loss, self.accuracy],
+                    feed_dict={
+                        self.inputs: x,
+                        self.labels: y
+                    })
 
                 avgloss += loss
                 avgacc += acc
 
                 sys.stdout.write(
-                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
+                    '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
 
             avgloss /= steps
             avgacc /= steps
             sys.stdout.write(
-                    '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
+                '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
             print
 
             steps = int(len(X_val) / self.batch_size)
@@ -71,11 +71,11 @@ class Net(object):
                 y = Y_val[s * self.batch_size:(s + 1) * self.batch_size]
 
                 loss, acc = self.sess.run(
-                        [self.loss, self.accuracy],
-                        feed_dict={
-                            self.inputs: x,
-                            self.labels: y
-                        })
+                    [self.loss, self.accuracy],
+                    feed_dict={
+                        self.inputs: x,
+                        self.labels: y
+                    })
 
                 avgloss += loss
                 avgacc += acc
@@ -96,11 +96,11 @@ class Net(object):
             y = Y_test[s * self.batch_size:(s + 1) * self.batch_size]
 
             loss, acc = self.sess.run(
-                    [self.loss, self.accuracy],
-                    feed_dict={
-                        self.inputs: x,
-                        self.labels: y
-                    })
+                [self.loss, self.accuracy],
+                feed_dict={
+                    self.inputs: x,
+                    self.labels: y
+                })
 
             avgloss += loss
             avgacc += acc
@@ -126,6 +126,12 @@ def accuracy(y_pred, y_true):
     return acc
 
 
+def differentiable_clip(inputs, alpha, rmin, rmax):
+    # clip_by_value is not differentiable, so author
+    # approxiamte the clipping function with two sigmoid functions
+    return tf.sigmoid(-alpha * (inputs - rmin)) + tf.sigmoid(alpha * (inputs - rmax))
+
+
 def double_thresholding(inputs, name):
     r = tf.get_variable(name=name + '_r',
                         shape=(),
@@ -137,11 +143,10 @@ def double_thresholding(inputs, name):
     rmin = tf.reduce_min(inputs, axis=0) * r
     rmax = tf.reduce_max(inputs, axis=0) * r
 
+    alpha = 0.1
+    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
 
-
-    O = magnitude()
-    minimal_hd_thresh = 0.5 + r * O
-    return minimal_hd_thresh
+    return hout
 
 
 def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, fuzziness_relu=False):
@@ -186,12 +191,10 @@ def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, 
         mean_w = tf.reduce_mean(conv_weight, axis=(0, 1, 2), keep_dims=True)
         hout = (2. / l) * conv - mean_w - mean_x
 
-        if not fuzziness_relu:
-            minimal_hd_thresh = 0.5
-        else:
-            minimal_hd_thresh = double_thresholding(hout, name)
+        hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
-        hout = tf.nn.relu(minimal_hd_thresh + hout) if with_relu else hout
+        if fuzziness_relu:
+            hout = double_thresholding(hout, 'double_threshold')
 
         return hout
     else:
@@ -232,12 +235,10 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
 
         hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
 
-        if not fuzziness_relu:
-            minimal_hd_thresh = 0.5
-        else:
-            minimal_hd_thresh = double_thresholding(hout, name)
+        hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
-        hout = tf.nn.relu(minimal_hd_thresh + hout) if with_relu else hout
+        if fuzziness_relu:
+            hout = double_thresholding(hout, 'double_threshold')
 
         return hout
     else:
@@ -253,7 +254,3 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
         hout = tf.matmul(inputs, fc_weight) + fc_bias
         hout = tf.nn.relu(hout) if with_relu else hout
         return hout
-
-
-def magnitude():
-    return 0
