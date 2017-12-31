@@ -145,7 +145,8 @@ def double_thresholding(inputs, name):
     rmax = tf.reduce_max(inputs, axis=range(len(input_shape) - 1)) * r
 
     alpha = 0.1
-    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
+    # hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
+    hout = tf.clip_by_value(inputs, rmin, rmax)
 
     return hout
 
