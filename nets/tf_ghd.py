@@ -53,7 +53,7 @@ class CifarNetGHD(Net):
         self.pool3 = tf.layers.max_pooling2d(self.conv3, [2, 2], [2, 2], name='pool3')
         self.fc4 = fc_ghd(self.pool3, 1024, 'fc4', with_ghd=True, with_relu=with_relu, fuzziness_relu=fuzziness_relu)
         self.fc5 = fc_ghd(self.fc4, 512, 'fc5', with_ghd=True, with_relu=with_relu, fuzziness_relu=fuzziness_relu)
-        self.fc6 = fc_ghd(self.fc5, nclass, 'fc4', with_ghd=True, with_relu=with_relu, fuzziness_relu=fuzziness_relu)
+        self.fc6 = fc_ghd(self.fc5, nclass, 'fc6', with_ghd=True, with_relu=with_relu, fuzziness_relu=fuzziness_relu)
 
         self.accuracy = accuracy(y_true=tf.squeeze(self.labels, axis=1),
                                  y_pred=tf.argmax(self.fc6, axis=1))

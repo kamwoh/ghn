@@ -238,7 +238,7 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
         hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
         if fuzziness_relu:
-            hout = double_thresholding(hout, 'double_threshold')
+            hout = double_thresholding(hout, name)
 
         return hout
     else:
