@@ -46,7 +46,7 @@ def main():
                       batch_size=16,
                       input_shape=[32, 32, 3],
                       with_relu=True,
-                      fuzziness_relu=False,
+                      fuzziness_relu=True,
                       nclass=nclass)
     net.train(10, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
