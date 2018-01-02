@@ -43,10 +43,10 @@ def main():
     # mnist net #
     #############
     net = CifarNetGHD(lr=0.1,
-                      batch_size=16,
+                      batch_size=1,
                       input_shape=[32, 32, 3],
-                      with_relu=False,
-                      fuzziness_relu=False,
+                      with_relu=True,
+                      fuzziness_relu=True,
                       nclass=nclass)
     net.train(10, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
