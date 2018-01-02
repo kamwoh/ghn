@@ -25,13 +25,13 @@ def main():
     X_train = X_train[indices]
     Y_train = Y_train[indices]
 
-    X_val = X_train[:split] / 255.
+    X_val = X_train[:split]
     Y_val = Y_train[:split]
 
-    X_train = X_train[split:] / 255.
+    X_train = X_train[split:]
     Y_train = Y_train[split:]
 
-    X_test = X_test / 255.
+    X_test = X_test
 
     # mean = X_train.mean(axis=(0, 1, 2))
     #
