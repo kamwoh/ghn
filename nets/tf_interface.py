@@ -139,8 +139,13 @@ def double_thresholding(inputs, name):
                         regularizer=None,
                         trainable=True)
 
-    rmin = tf.reduce_min(inputs, axis=range(1, len(input_shape) - 1), keep_dims=True) * r
-    rmax = tf.reduce_max(inputs, axis=range(1, len(input_shape) - 1), keep_dims=True) * r
+    if len(input_shape) == 4:
+        axis = (1, 2)
+    else:
+        axis = (1,)
+
+    rmin = tf.reduce_min(inputs, axis=axis, keep_dims=True) * r
+    rmax = tf.reduce_max(inputs, axis=axis, keep_dims=True) * r
 
     alpha = 0.1
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
@@ -233,7 +238,6 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
         mean_w = tf.reduce_mean(fc_weight, axis=0, keep_dims=True)
 
         hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
-
 
         if fuzziness_relu:
             hout = double_thresholding(hout, name)
