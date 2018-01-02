@@ -33,11 +33,11 @@ def main():
 
     X_test = X_test / 255.
 
-    mean = X_train.mean(axis=(0, 1, 2))
-
-    X_train -= mean
-    X_val -= mean
-    X_test -= mean
+    # mean = X_train.mean(axis=(0, 1, 2))
+    #
+    # X_train -= mean
+    # X_val -= mean
+    # X_test -= mean
 
     #############
     # mnist net #

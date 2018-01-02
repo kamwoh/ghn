@@ -127,8 +127,6 @@ def accuracy(y_pred, y_true):
 
 
 def differentiable_clip(inputs, alpha, rmin, rmax):
-    # clip_by_value is not differentiable, so author
-    # approxiamte the clipping function with two sigmoid functions
     return tf.sigmoid(-alpha * (inputs - rmin)) + tf.sigmoid(alpha * (inputs - rmax))
 
 
@@ -150,7 +148,7 @@ def double_thresholding(inputs, name):
     return hout
 
 
-def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, fuzziness_relu=False):
+def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, double_threshold=False):
     conv_weight = tf.get_variable(name=name + '_weights',
                                   shape=[kernel_size[0], kernel_size[1], inputs.shape.as_list()[-1], filters],
                                   dtype=tf.float32,
@@ -192,10 +190,10 @@ def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, 
         mean_w = tf.reduce_mean(conv_weight, axis=(0, 1, 2), keep_dims=True)
         hout = (2. / l) * conv - mean_w - mean_x
 
-        hout = tf.nn.relu(0.5 + hout) if with_relu else hout
-
-        if fuzziness_relu:
+        if double_threshold:
             hout = double_thresholding(hout, name)
+        else:
+            hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
         return hout
     else:
@@ -236,10 +234,11 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
 
         hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
 
-        hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
         if fuzziness_relu:
             hout = double_thresholding(hout, name)
+        else:
+            hout = tf.nn.relu(0.5 + hout) if with_relu else hout
 
         return hout
     else:
