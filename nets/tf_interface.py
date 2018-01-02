@@ -198,7 +198,7 @@ def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, 
         if double_threshold:
             hout = double_thresholding(hout, name)
         else:
-            hout = tf.nn.relu(0.5 + hout) if with_relu else hout
+            hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
 
         return hout
     else:
@@ -242,7 +242,7 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
         if fuzziness_relu:
             hout = double_thresholding(hout, name)
         else:
-            hout = tf.nn.relu(0.5 + hout) if with_relu else hout
+            hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
 
         return hout
     else:
