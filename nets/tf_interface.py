@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import tensorflow as tf
+from keras.preprocessing.image import ImageDataGenerator
 
 
 ##############
@@ -26,21 +27,32 @@ class Net(object):
     def train(self, epochs, X_train, Y_train, X_val, Y_val):
         self.sess.run(tf.global_variables_initializer())
         self.sess.run(tf.local_variables_initializer())
+
+        train_gen = ImageDataGenerator(width_shift_range=0.1,
+                                       height_shift_range=0.1,
+                                       shear_range=0.1,
+                                       zoom_range=10,
+                                       horizontal_flip=True)
+        train_gen = train_gen.flow(X_train, Y_train,
+                                   self.batch_size,
+                                   seed=123123)
+
         for e in xrange(epochs):
             indices = np.arange(len(X_train))
-            np.random.seed(np.random.randint(1000000))
-            np.random.shuffle(indices)
-
-            X_train = X_train[indices]
-            Y_train = Y_train[indices]
+            # np.random.seed(np.random.randint(1000000))
+            # np.random.shuffle(indices)
+            #
+            # X_train = X_train[indices]
+            # Y_train = Y_train[indices]
 
             steps = int(len(X_train) / self.batch_size)
             curr_mini_batches = 0
             avgloss = 0
             avgacc = 0
             for s in xrange(steps):
-                x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
-                y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
+                x, y = train_gen.next()
+                # x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
+                # y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
 
                 curr_mini_batches += self.batch_size
 
@@ -147,8 +159,8 @@ def double_thresholding(inputs, name):
     rmin = tf.reduce_min(inputs, axis=axis, keep_dims=True) * r
     rmax = tf.reduce_max(inputs, axis=axis, keep_dims=True) * r
 
-    alpha = 0.1
-    hout = 0.5 + inputs * differentiable_clip(inputs, alpha, rmin, rmax)
+    alpha = 1
+    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
 
     return hout
 
