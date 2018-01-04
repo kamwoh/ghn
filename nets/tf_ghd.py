@@ -44,7 +44,7 @@ class CifarNetGHD(Net):
         self.labels = tf.placeholder(dtype=tf.int64,
                                      shape=[None, 1])
 
-        self.conv1 = conv_ghd(self.inputs, 64, [3, 3], 'conv1', with_ghd=True, with_relu=with_relu,
+        self.conv1 = conv_ghd(self.inputs, 64, [5, 5], 'conv1', with_ghd=True, with_relu=with_relu,
                               double_threshold=double_threshold)
         self.conv2 = conv_ghd(self.conv1, 256, [5, 5], 'conv2', with_ghd=True, with_relu=with_relu,
                               double_threshold=double_threshold)

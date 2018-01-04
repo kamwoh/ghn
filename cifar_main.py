@@ -46,7 +46,7 @@ def main():
                       batch_size=64,
                       input_shape=[32, 32, 3],
                       double_threshold=True,
-                      aug=True,
+                      aug=False,
                       nclass=nclass)
     net.train(30, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
