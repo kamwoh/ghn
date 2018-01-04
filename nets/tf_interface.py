@@ -112,8 +112,11 @@ class Net(object):
             print
 
     def evaluate(self, X_test, Y_test):
-        gen = ImageDataGenerator(samplewise_center=True,
-                                 samplewise_std_normalization=True)
+        if self.aug:
+            gen = ImageDataGenerator(samplewise_center=True,
+                                     samplewise_std_normalization=True)
+        else:
+            gen = ImageDataGenerator()
         gen = gen.flow(X_test, Y_test,
                        self.batch_size,
                        shuffle=False)
