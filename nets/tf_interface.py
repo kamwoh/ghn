@@ -31,7 +31,6 @@ class Net(object):
         # train_gen = ImageDataGenerator()
         train_gen = ImageDataGenerator(width_shift_range=0.1,
                                        height_shift_range=0.1,
-                                       zoom_range=10,
                                        horizontal_flip=True)
         train_gen = train_gen.flow(X_train, Y_train,
                                    self.batch_size,
