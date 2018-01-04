@@ -13,7 +13,7 @@ def main():
     X_train = np.expand_dims(X_train, -1)
     Y_train = np.expand_dims(Y_train, -1)
 
-    X_test = np.expand_dims(X_test, -1) / 255.
+    X_test = np.expand_dims(X_test, -1)
     Y_test = np.expand_dims(Y_test, -1)
 
     split = int(len(X_train) * 0.2)
@@ -24,10 +24,10 @@ def main():
     X_train = X_train[indices]
     Y_train = Y_train[indices]
 
-    X_val = X_train[:split] / 255.
+    X_val = X_train[:split]
     Y_val = Y_train[:split]
 
-    X_train = X_train[split:] / 255.
+    X_train = X_train[split:]
     Y_train = Y_train[split:]
 
     #############
@@ -35,8 +35,7 @@ def main():
     #############
     net = MnistNetGHD(lr=0.1,
                       batch_size=32,
-                      input_shape=[28, 28, 1],
-                      with_relu=True)
+                      input_shape=[28, 28, 1])
     net.train(1, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
     net.close()

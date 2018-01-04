@@ -45,8 +45,7 @@ def main():
     net = CifarNetGHD(lr=0.1,
                       batch_size=64,
                       input_shape=[32, 32, 3],
-                      with_relu=True,
-                      fuzziness_relu=True,
+                      double_threshold=True,
                       nclass=nclass)
     net.train(10, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)

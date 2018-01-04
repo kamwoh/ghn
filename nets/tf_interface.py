@@ -28,11 +28,12 @@ class Net(object):
         self.sess.run(tf.global_variables_initializer())
         self.sess.run(tf.local_variables_initializer())
 
-        train_gen = ImageDataGenerator(width_shift_range=0.1,
-                                       height_shift_range=0.1,
-                                       shear_range=0.1,
-                                       zoom_range=10,
-                                       horizontal_flip=True)
+        train_gen = ImageDataGenerator()
+        # train_gen = ImageDataGenerator(width_shift_range=0.1,
+        #                                height_shift_range=0.1,
+        #                                shear_range=0.1,
+        #                                zoom_range=10,
+        #                                horizontal_flip=True)
         train_gen = train_gen.flow(X_train, Y_train,
                                    self.batch_size,
                                    seed=123123)
@@ -57,22 +58,22 @@ class Net(object):
                 curr_mini_batches += self.batch_size
 
                 _, loss, acc = self.sess.run(
-                    [self.train_op, self.loss, self.accuracy],
-                    feed_dict={
-                        self.inputs: x,
-                        self.labels: y
-                    })
+                        [self.train_op, self.loss, self.accuracy],
+                        feed_dict={
+                            self.inputs: x,
+                            self.labels: y
+                        })
 
                 avgloss += loss
                 avgacc += acc
 
                 sys.stdout.write(
-                    '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
+                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
 
             avgloss /= steps
             avgacc /= steps
             sys.stdout.write(
-                '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
+                    '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
             print
 
             steps = int(len(X_val) / self.batch_size)
@@ -83,11 +84,11 @@ class Net(object):
                 y = Y_val[s * self.batch_size:(s + 1) * self.batch_size]
 
                 loss, acc = self.sess.run(
-                    [self.loss, self.accuracy],
-                    feed_dict={
-                        self.inputs: x,
-                        self.labels: y
-                    })
+                        [self.loss, self.accuracy],
+                        feed_dict={
+                            self.inputs: x,
+                            self.labels: y
+                        })
 
                 avgloss += loss
                 avgacc += acc
@@ -108,11 +109,11 @@ class Net(object):
             y = Y_test[s * self.batch_size:(s + 1) * self.batch_size]
 
             loss, acc = self.sess.run(
-                [self.loss, self.accuracy],
-                feed_dict={
-                    self.inputs: x,
-                    self.labels: y
-                })
+                    [self.loss, self.accuracy],
+                    feed_dict={
+                        self.inputs: x,
+                        self.labels: y
+                    })
 
             avgloss += loss
             avgacc += acc
@@ -142,14 +143,23 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
     return tf.sigmoid(-alpha * (inputs - rmin)) + tf.sigmoid(alpha * (inputs - rmax))
 
 
-def double_thresholding(inputs, name):
+def double_thresholding(inputs, name, set_r_zero=False):
     input_shape = inputs.shape.as_list()
-    r = tf.get_variable(name=name + '_r',
-                        shape=(input_shape[-1],),
-                        dtype=tf.float32,
-                        initializer=tf.glorot_normal_initializer(829),
-                        regularizer=None,
-                        trainable=True)
+
+    if not set_r_zero:
+        r = tf.get_variable(name=name + '_r',
+                            shape=(input_shape[-1],),
+                            dtype=tf.float32,
+                            initializer=tf.glorot_normal_initializer(829),
+                            regularizer=None,
+                            trainable=True)
+    else:
+        r = tf.get_variable(name=name + '_r',
+                            shape=(input_shape[-1],),
+                            dtype=tf.float32,
+                            initializer=tf.zeros_initializer(),
+                            regularizer=None,
+                            trainable=False)
 
     if len(input_shape) == 4:
         axis = (1, 2)
@@ -207,10 +217,10 @@ def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, 
         mean_w = tf.reduce_mean(conv_weight, axis=(0, 1, 2), keep_dims=True)
         hout = (2. / l) * conv - mean_w - mean_x
 
-        if double_threshold:
-            hout = double_thresholding(hout, name)
-        else:
-            hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
+        # if double_threshold:
+        hout = double_thresholding(hout, name, double_threshold)
+        # else:
+        #     hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
 
         return hout
     else:
@@ -228,7 +238,7 @@ def conv_ghd(inputs, filters, kernel_size, name, with_ghd=True, with_relu=True, 
         return hout
 
 
-def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_relu=False):
+def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, double_threshold=False):
     if len(inputs.shape) != 2:
         inputs = tf.reshape(inputs, shape=[-1, reduce(lambda x, y: x * y,
                                                       inputs.shape.as_list()[1:],
@@ -251,10 +261,10 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, fuzziness_rel
 
         hout = (2. / l) * tf.matmul(inputs, fc_weight) - mean_w - mean_x
 
-        if fuzziness_relu:
-            hout = double_thresholding(hout, name)
-        else:
-            hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
+        # if double_threshold:
+        hout = double_thresholding(hout, name, double_threshold)
+        # else:
+        #     hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
 
         return hout
     else:
