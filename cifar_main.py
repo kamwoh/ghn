@@ -47,7 +47,7 @@ def main():
                       input_shape=[32, 32, 3],
                       double_threshold=True,
                       nclass=nclass)
-    net.train(10, X_train, Y_train, X_val, Y_val)
+    net.train(30, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
     net.close()
 
