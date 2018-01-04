@@ -4,7 +4,7 @@ from tf_interface import Net, accuracy, conv_ghd, fc_ghd
 
 
 class MnistNetGHD(Net):
-    def __init__(self, lr=0.1, batch_size=256, input_shape=None, with_relu=True, fuzziness_relu=False):
+    def __init__(self, lr=0.1, batch_size=256, input_shape=None, with_relu=True, fuzziness_relu=False, aug=True):
         super(MnistNetGHD, self).__init__(lr, batch_size, input_shape)
 
         self.inputs = tf.placeholder(dtype=tf.float32,
@@ -30,12 +30,13 @@ class MnistNetGHD(Net):
 
         self.optimizer = tf.train.AdamOptimizer(lr)
 
+        self.aug = aug
         self.batch_size = batch_size
         self.train_op = self.optimizer.minimize(self.loss)
 
 
 class CifarNetGHD(Net):
-    def __init__(self, lr=0.1, batch_size=256, input_shape=None, with_relu=True, double_threshold=False, nclass=10):
+    def __init__(self, lr=0.1, batch_size=256, input_shape=None, with_relu=True, double_threshold=False, aug=True, nclass=10):
         super(CifarNetGHD, self).__init__(lr, batch_size, input_shape)
 
         self.inputs = tf.placeholder(dtype=tf.float32,
@@ -64,4 +65,5 @@ class CifarNetGHD(Net):
         self.optimizer = tf.train.AdamOptimizer(lr)
 
         self.batch_size = batch_size
+        self.aug = aug
         self.train_op = self.optimizer.minimize(self.loss)

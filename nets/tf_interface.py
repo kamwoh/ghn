@@ -22,36 +22,48 @@ class Net(object):
         self.loss = None
         self.accuracy = None
 
+        self.aug = True
+
         self.sess = tf.Session()
 
     def train(self, epochs, X_train, Y_train, X_val, Y_val):
         self.sess.run(tf.global_variables_initializer())
         self.sess.run(tf.local_variables_initializer())
 
-        # train_gen = ImageDataGenerator()
+        if self.aug:
+            train_gen = ImageDataGenerator(samplewise_center=True,
+                                           samplewise_std_normalization=True)
+            val_gen = ImageDataGenerator(samplewise_center=True,
+                                         samplewise_std_normalization=True)
+        else:
+            train_gen = ImageDataGenerator()
+            val_gen = ImageDataGenerator()
         # train_gen = ImageDataGenerator(width_shift_range=0.1,
         #                                height_shift_range=0.1,
         #                                horizontal_flip=True)
-        # train_gen = train_gen.flow(X_train, Y_train,
-        #                            self.batch_size,
-        #                            seed=123123)
+        train_gen = train_gen.flow(X_train, Y_train,
+                                   self.batch_size,
+                                   seed=123123)
+        val_gen = val_gen.flow(X_val, Y_val,
+                               self.batch_size,
+                               shuffle=False)
 
         for e in xrange(epochs):
-            indices = np.arange(len(X_train))
-            np.random.seed(np.random.randint(1000000))
-            np.random.shuffle(indices)
-
-            X_train = X_train[indices]
-            Y_train = Y_train[indices]
+            # indices = np.arange(len(X_train))
+            # np.random.seed(np.random.randint(1000000))
+            # np.random.shuffle(indices)
+            #
+            # X_train = X_train[indices]
+            # Y_train = Y_train[indices]
 
             steps = int(len(X_train) / self.batch_size)
             curr_mini_batches = 0
             avgloss = 0
             avgacc = 0
             for s in xrange(steps):
-                # x, y = train_gen.next()
-                x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
-                y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
+                x, y = train_gen.next()
+                # x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
+                # y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
 
                 curr_mini_batches += self.batch_size
 
@@ -78,8 +90,9 @@ class Net(object):
             avgloss = 0
             avgacc = 0
             for s in xrange(steps):
-                x = X_val[s * self.batch_size:(s + 1) * self.batch_size]
-                y = Y_val[s * self.batch_size:(s + 1) * self.batch_size]
+                x, y = val_gen.next()
+                # x = X_val[s * self.batch_size:(s + 1) * self.batch_size]
+                # y = Y_val[s * self.batch_size:(s + 1) * self.batch_size]
 
                 loss, acc = self.sess.run(
                         [self.loss, self.accuracy],
@@ -99,12 +112,18 @@ class Net(object):
             print
 
     def evaluate(self, X_test, Y_test):
+        gen = ImageDataGenerator(samplewise_center=True,
+                                 samplewise_std_normalization=True)
+        gen = gen.flow(X_test, Y_test,
+                       self.batch_size,
+                       shuffle=False)
         steps = int(len(X_test) / self.batch_size)
         avgloss = 0
         avgacc = 0
         for s in xrange(steps):
-            x = X_test[s * self.batch_size:(s + 1) * self.batch_size]
-            y = Y_test[s * self.batch_size:(s + 1) * self.batch_size]
+            x, y = gen.next()
+            # x = X_test[s * self.batch_size:(s + 1) * self.batch_size]
+            # y = Y_test[s * self.batch_size:(s + 1) * self.batch_size]
 
             loss, acc = self.sess.run(
                     [self.loss, self.accuracy],
@@ -167,9 +186,12 @@ def double_thresholding(inputs, name, double_threshold=False):
     rmin = tf.reduce_min(inputs, axis=axis, keep_dims=True) * r
     rmax = tf.reduce_max(inputs, axis=axis, keep_dims=True) * r
 
-    alpha = 1
+    alpha = 0.1
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
+
+    # if not double_threshold:
     hout = tf.nn.relu(0.5 + hout)
+
     return hout
 
 

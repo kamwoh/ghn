@@ -25,13 +25,13 @@ def main():
     X_train = X_train[indices]
     Y_train = Y_train[indices]
 
-    X_val = X_train[:split] / 255.
+    X_val = X_train[:split]
     Y_val = Y_train[:split]
 
-    X_train = X_train[split:] / 255.
+    X_train = X_train[split:]
     Y_train = Y_train[split:]
 
-    X_test = X_test / 255.
+    X_test = X_test
 
     # mean = X_train.mean(axis=(0, 1, 2))
     #
@@ -43,9 +43,10 @@ def main():
     # mnist net #
     #############
     net = CifarNetGHD(lr=0.1,
-                      batch_size=128,
+                      batch_size=64,
                       input_shape=[32, 32, 3],
                       double_threshold=True,
+                      aug=True,
                       nclass=nclass)
     net.train(30, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
