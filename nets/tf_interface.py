@@ -29,29 +29,29 @@ class Net(object):
         self.sess.run(tf.local_variables_initializer())
 
         # train_gen = ImageDataGenerator()
-        train_gen = ImageDataGenerator(width_shift_range=0.1,
-                                       height_shift_range=0.1,
-                                       horizontal_flip=True)
-        train_gen = train_gen.flow(X_train, Y_train,
-                                   self.batch_size,
-                                   seed=123123)
+        # train_gen = ImageDataGenerator(width_shift_range=0.1,
+        #                                height_shift_range=0.1,
+        #                                horizontal_flip=True)
+        # train_gen = train_gen.flow(X_train, Y_train,
+        #                            self.batch_size,
+        #                            seed=123123)
 
         for e in xrange(epochs):
             indices = np.arange(len(X_train))
-            # np.random.seed(np.random.randint(1000000))
-            # np.random.shuffle(indices)
-            #
-            # X_train = X_train[indices]
-            # Y_train = Y_train[indices]
+            np.random.seed(np.random.randint(1000000))
+            np.random.shuffle(indices)
+
+            X_train = X_train[indices]
+            Y_train = Y_train[indices]
 
             steps = int(len(X_train) / self.batch_size)
             curr_mini_batches = 0
             avgloss = 0
             avgacc = 0
             for s in xrange(steps):
-                x, y = train_gen.next()
-                # x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
-                # y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
+                # x, y = train_gen.next()
+                x = X_train[s * self.batch_size:(s + 1) * self.batch_size]
+                y = Y_train[s * self.batch_size:(s + 1) * self.batch_size]
 
                 curr_mini_batches += self.batch_size
 
@@ -141,10 +141,10 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
     return tf.sigmoid(-alpha * (inputs - rmin)) + tf.sigmoid(alpha * (inputs - rmax))
 
 
-def double_thresholding(inputs, name, set_r_zero=False):
+def double_thresholding(inputs, name, double_threshold=False):
     input_shape = inputs.shape.as_list()
 
-    if double_thresholding:
+    if double_threshold:
         r = tf.get_variable(name=name + '_r',
                             shape=(input_shape[-1],),
                             dtype=tf.float32,
@@ -169,7 +169,7 @@ def double_thresholding(inputs, name, set_r_zero=False):
 
     alpha = 1
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
-
+    hout = tf.nn.relu(0.5 + hout)
     return hout
 
 
@@ -261,6 +261,7 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, double_thresh
 
         # if double_threshold:
         hout = double_thresholding(hout, name, double_threshold)
+        hout = tf.nn.relu(hout)
         # else:
         #     hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
 
