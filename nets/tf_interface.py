@@ -144,7 +144,7 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
 def double_thresholding(inputs, name, set_r_zero=False):
     input_shape = inputs.shape.as_list()
 
-    if not set_r_zero:
+    if double_thresholding:
         r = tf.get_variable(name=name + '_r',
                             shape=(input_shape[-1],),
                             dtype=tf.float32,
