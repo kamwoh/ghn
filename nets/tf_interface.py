@@ -190,10 +190,12 @@ def double_thresholding(inputs, name, double_threshold=False):
     rmax = tf.reduce_max(inputs, axis=axis, keep_dims=True) * r
 
     alpha = 0.1
+
+
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
 
-    # if not double_threshold:
-    hout = tf.nn.relu(0.5 + hout)
+    if not double_threshold:
+        hout = tf.nn.relu(0.5 - hout)
 
     return hout
 
