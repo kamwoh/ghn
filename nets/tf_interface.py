@@ -10,7 +10,7 @@ from keras.preprocessing.image import ImageDataGenerator
 ##############
 
 class Net(object):
-    def __init__(self, lr=0.1, batch_size=256, input_shape=None):
+    def __init__(self, lr=0.1, batch_size=256, input_shape=None, aug=True, zero_mean=False, unit_variance=False):
         self.lr = lr
         self.batch_size = batch_size
         self.input_shape = input_shape
@@ -22,7 +22,24 @@ class Net(object):
         self.loss = None
         self.accuracy = None
 
-        self.aug = True
+        self.aug = aug
+
+        self.train_gen_options = {
+            'samplewise_center': zero_mean,
+            'samplewise_std_normalization': unit_variance,
+            'horizontal_flip': self.aug,
+            'vertical_flip': self.aug
+        }
+
+        self.val_gen_options = {
+            'samplewise_center': zero_mean,
+            'samplewise_std_normalization': unit_variance
+        }
+
+        self.test_gen_options = {
+            'samplewise_center': zero_mean,
+            'samplewise_std_normalization': unit_variance
+        }
 
         self.sess = tf.Session()
 
@@ -30,14 +47,8 @@ class Net(object):
         self.sess.run(tf.global_variables_initializer())
         self.sess.run(tf.local_variables_initializer())
 
-        if self.aug:
-            train_gen = ImageDataGenerator(samplewise_center=True,
-                                           samplewise_std_normalization=True)
-            val_gen = ImageDataGenerator(samplewise_center=True,
-                                         samplewise_std_normalization=True)
-        else:
-            train_gen = ImageDataGenerator()
-            val_gen = ImageDataGenerator()
+        train_gen = ImageDataGenerator(**self.train_gen_options)
+        val_gen = ImageDataGenerator(**self.val_gen_options)
         # train_gen = ImageDataGenerator(width_shift_range=0.1,
         #                                height_shift_range=0.1,
         #                                horizontal_flip=True)
@@ -112,11 +123,7 @@ class Net(object):
             print
 
     def evaluate(self, X_test, Y_test):
-        if self.aug:
-            gen = ImageDataGenerator(samplewise_center=True,
-                                     samplewise_std_normalization=True)
-        else:
-            gen = ImageDataGenerator()
+        gen = ImageDataGenerator(**self.test_gen_options)
         gen = gen.flow(X_test, Y_test,
                        self.batch_size,
                        shuffle=False)
@@ -191,11 +198,10 @@ def double_thresholding(inputs, name, double_threshold=False):
 
     alpha = 0.1
 
-
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
-
+    # hout = tf.nn.relu(hout)
     if not double_threshold:
-        hout = tf.nn.relu(0.5 - hout)
+        hout = tf.nn.relu(0.5 + hout)
 
     return hout
 
@@ -288,7 +294,6 @@ def fc_ghd(inputs, out_units, name, with_ghd=True, with_relu=True, double_thresh
 
         # if double_threshold:
         hout = double_thresholding(hout, name, double_threshold)
-        hout = tf.nn.relu(hout)
         # else:
         #     hout = tf.nn.relu(0.5 + hout) if with_relu else 0.5 + hout
 

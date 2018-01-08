@@ -37,7 +37,9 @@ def main():
                       batch_size=64,
                       input_shape=[28, 28, 1],
                       aug=False,
-                      fuzziness_relu=False)
+                      zero_mean=False,
+                      unit_variance=False,
+                      double_threshold=False)
     net.train(1, X_train, Y_train, X_val, Y_val)
     net.evaluate(X_test, Y_test)
     net.close()
