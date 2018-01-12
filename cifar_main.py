@@ -43,7 +43,7 @@ def main():
     # mnist net #
     #############
     net = CifarNetGHD(lr=0.1,
-                      batch_size=64,
+                      batch_size=16,
                       input_shape=[32, 32, 3],
                       double_threshold=True,
                       aug=True,

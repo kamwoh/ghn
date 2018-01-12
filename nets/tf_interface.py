@@ -28,7 +28,9 @@ class Net(object):
             'samplewise_center': zero_mean,
             'samplewise_std_normalization': unit_variance,
             'horizontal_flip': self.aug,
-            'vertical_flip': self.aug
+            'vertical_flip': False,
+            'rotation_range': 15,
+            'width_shift_range': 0.25
         }
 
         self.val_gen_options = {
@@ -170,16 +172,24 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
     return tf.sigmoid(-alpha * (inputs - rmin)) + tf.sigmoid(alpha * (inputs - rmax))
 
 
-def double_thresholding(inputs, name, double_threshold=False):
+def double_thresholding(inputs, name, double_threshold=False, per_pixel=True):
     input_shape = inputs.shape.as_list()
 
     if double_threshold:
-        r = tf.get_variable(name=name + '_r',
-                            shape=(input_shape[-1],),
-                            dtype=tf.float32,
-                            initializer=tf.glorot_normal_initializer(829),
-                            regularizer=None,
-                            trainable=True)
+        if per_pixel:
+            r = tf.get_variable(name=name+'_r',
+                                shape=input_shape[1:],
+                                dtype=tf.float32,
+                                initializer=tf.glorot_normal_initializer(807),
+                                regularizer=None,
+                                trainable=True)
+        else:
+            r = tf.get_variable(name=name + '_r',
+                                shape=(input_shape[-1],),
+                                dtype=tf.float32,
+                                initializer=tf.glorot_normal_initializer(829),
+                                regularizer=None,
+                                trainable=True)
     else:
         r = tf.get_variable(name=name + '_r',
                             shape=(input_shape[-1],),
@@ -196,7 +206,7 @@ def double_thresholding(inputs, name, double_threshold=False):
     rmin = tf.reduce_min(inputs, axis=axis, keep_dims=True) * r
     rmax = tf.reduce_max(inputs, axis=axis, keep_dims=True) * r
 
-    alpha = 0.1
+    alpha = 0.2
 
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
     # hout = tf.nn.relu(hout)
