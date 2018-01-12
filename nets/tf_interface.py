@@ -91,12 +91,16 @@ class Net(object):
                 avgacc += acc
 
                 sys.stdout.write(
-                        '\rtraining loss %s acc %s at %s/%s' % (loss, acc, curr_mini_batches, X_train.shape[0]))
+                        '\rtraining loss %s acc %s at %s/%s epoch %s' % (
+                        loss, acc, curr_mini_batches, X_train.shape[0], e + 1))
+                sys.stdout.flush()
 
             avgloss /= steps
             avgacc /= steps
             sys.stdout.write(
-                    '\rtraining loss %s acc %s at %s/%s' % (avgloss, avgacc, curr_mini_batches, X_train.shape[0]))
+                    '\rtraining loss %s acc %s at %s/%s epoch %s' % (
+                    avgloss, avgacc, curr_mini_batches, X_train.shape[0], e + 1))
+            sys.stdout.flush()
             print
 
             steps = int(len(X_val) / self.batch_size)
@@ -117,11 +121,13 @@ class Net(object):
                 avgloss += loss
                 avgacc += acc
 
-                sys.stdout.write('\rvalidation loss %s acc %s' % (loss, acc))
+                sys.stdout.write('\rvalidation loss %s acc %s epoch %s' % (loss, acc, e + 1))
+                sys.stdout.flush()
 
             avgloss /= steps
             avgacc /= steps
-            sys.stdout.write('\rvalidation loss %s acc %s' % (avgloss, avgacc))
+            sys.stdout.write('\rvalidation loss %s acc %s epoch %s' % (avgloss, avgacc, e + 1))
+            sys.stdout.flush()
             print
 
     def evaluate(self, X_test, Y_test):
@@ -148,10 +154,12 @@ class Net(object):
             avgacc += acc
 
             sys.stdout.write('\rtesting loss %s acc %s' % (loss, acc))
+            sys.stdout.flush()
 
         avgloss /= steps
         avgacc /= steps
         sys.stdout.write('\rtesting loss %s acc %s' % (avgloss, avgacc))
+        sys.stdout.flush()
         print
 
     def close(self):
@@ -177,7 +185,7 @@ def double_thresholding(inputs, name, double_threshold=False, per_pixel=True):
 
     if double_threshold:
         if per_pixel:
-            r = tf.get_variable(name=name+'_r',
+            r = tf.get_variable(name=name + '_r',
                                 shape=input_shape[1:],
                                 dtype=tf.float32,
                                 initializer=tf.glorot_normal_initializer(807),
