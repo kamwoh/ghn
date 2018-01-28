@@ -1,5 +1,6 @@
 from keras import optimizers
-from keras.layers import Flatten, MaxPooling2D, Softmax
+from keras.callbacks import ModelCheckpoint
+from keras.layers import Flatten, MaxPooling2D, Softmax, Conv2D, Dense
 from keras.models import Sequential
 
 import dataset
@@ -30,7 +31,8 @@ def main():
                         double_threshold=double_threshold,
                         name='fc3'))
     ghd_model.add(FCGHD(units=10,
-                        double_threshold=double_threshold))
+                        double_threshold=double_threshold,
+                        name='fc4'))
     ghd_model.add(Softmax())
     ghd_model.compile(optimizer=optimizers.Adam(0.1),
                       loss='categorical_crossentropy',
@@ -46,7 +48,46 @@ def main():
 
     ghd_model.fit_generator(train_gen,
                             epochs=5,
-                            validation_data=val_gen)
+                            validation_data=val_gen,
+                            callbacks=[ModelCheckpoint('./keras_mnist_ghd.h5', save_best_only=True)])
+
+    batch_size = 256
+
+    model = Sequential()
+    model.add(Conv2D(filters=16,
+                     kernel_size=[5, 5],
+                     input_shape=(28, 28, 1),
+                     name='conv1'))
+    model.add(MaxPooling2D(pool_size=[2, 2],
+                           strides=[2, 2]))
+    model.add(Conv2D(filters=64,
+                     kernel_size=[5, 5],
+                     name='conv2'))
+    model.add(MaxPooling2D(pool_size=[2, 2],
+                           strides=[2, 2]))
+
+    model.add(Flatten())
+    model.add(Dense(units=1024,
+                    name='fc3'))
+    model.add(Dense(units=10,
+                    name='fc4'))
+    model.add(Softmax())
+    model.compile(optimizer=optimizers.Adam(0.1),
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+    model.summary()
+
+    train_gen, val_gen, test_gen = dataset.get_mnist_generator(batch_size,
+                                                               zero_mean=False,
+                                                               unit_variance=False,
+                                                               horizontal_flip=False,
+                                                               rotation_range=0,
+                                                               width_shift_range=0)
+
+    model.fit_generator(train_gen,
+                        epochs=5,
+                        validation_data=val_gen,
+                        callbacks=[ModelCheckpoint('./keras_mnist.h5', save_best_only=True)])
 
 
 if __name__ == '__main__':
