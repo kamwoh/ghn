@@ -56,12 +56,11 @@ def main():
             cv2.imshow('input', img_disp)
             cv2.imshow('disp', disp)
 
-            if weight_idx[layer_idx] <= 3:
-                weight = model.get_weights()[weight_idx[layer_idx]]
-                weight = utils.normalize_weights(weight, 'conv')
-                weight = np.transpose(weight, (3, 0, 1, 2))
-                weight_disp = utils.combine_and_fit(weight, is_weights=True, disp_w=400)
-                cv2.imshow('weight_disp', weight_disp)
+            weight = model.get_weights()[0]
+            weight = utils.normalize_weights(weight, 'conv')
+            weight = np.transpose(weight, (3, 0, 1, 2))
+            weight_disp = utils.combine_and_fit(weight, is_weights=True, disp_w=400)
+            cv2.imshow('weight_disp', weight_disp)
 
         val = cv2.waitKey(1) & 0xFF
 
