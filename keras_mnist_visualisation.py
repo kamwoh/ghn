@@ -62,6 +62,8 @@ def main():
             weight_disp = utils.combine_and_fit(weight, is_weights=True, disp_w=400)
             cv2.imshow('weight_disp', weight_disp)
 
+            print('output', np.argmax(model.predict(img)[0]))
+
         val = cv2.waitKey(1) & 0xFF
 
         if val == ord('q'):
