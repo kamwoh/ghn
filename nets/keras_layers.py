@@ -1,4 +1,3 @@
-import numpy as np
 from keras import backend as K
 from keras import initializers
 from keras.engine import Layer
@@ -16,21 +15,21 @@ def double_thresholding(ghd_layer, inputs, double_threshold, per_pixel=False):
         if per_pixel:
             r = ghd_layer.add_weight(name='r',
                                      shape=input_shape[1:],
-                                     dtype=np.float32,
+                                     dtype=K.floatx(),
                                      initializer=initializers.glorot_normal(807),
                                      regularizer=None,
                                      trainable=True)
         else:
             r = ghd_layer.add_weight(name='r',
                                      shape=(input_shape[-1],),
-                                     dtype=np.float32,
+                                     dtype=K.floatx(),
                                      initializer=initializers.glorot_normal(829),
                                      regularizer=None,
                                      trainable=True)
     else:
         r = ghd_layer.add_weight(name='r',
                                  shape=(input_shape[-1],),
-                                 dtype=np.float32,
+                                 dtype=K.floatx(),
                                  initializer=initializers.zeros(),
                                  regularizer=None,
                                  trainable=False)
@@ -71,14 +70,14 @@ class ConvGHD(Layer):
     def build(self, input_shape):
         self.weight = self.add_weight(name='conv_ghd_weight',
                                       shape=[self.kernel_size[0], self.kernel_size[1], input_shape[-1], self.filters],
-                                      dtype=np.float32,
+                                      dtype=K.floatx(),
                                       initializer=initializers.glorot_normal(4567),
                                       regularizer=None,
                                       trainable=True)
 
         self.mean_weight = self.add_weight(name='mean_conv_ghd_weight',
                                            shape=[self.kernel_size[0], self.kernel_size[1], input_shape[-1], 1],
-                                           dtype=np.float32,
+                                           dtype=K.floatx(),
                                            initializer=initializers.constant(1.0),
                                            regularizer=None,
                                            trainable=False)
@@ -95,7 +94,7 @@ class ConvGHD(Layer):
         l = K.constant(reduce(lambda x, y: x * y,
                               self.weight.shape.as_list()[:3],
                               1),
-                       dtype=np.float32)
+                       dtype=K.floatx())
 
         # convolution way of mean
         # output shape will be (batch, height, width, 1)
@@ -149,7 +148,7 @@ class FCGHD(Layer):
         self._input_shape = input_shape
         self.weight = self.add_weight(name='fc_ghd_weight',
                                       shape=[input_shape[1], self.units],
-                                      dtype=np.float32,
+                                      dtype=K.floatx(),
                                       initializer=initializers.glorot_normal(1234),
                                       regularizer=None,
                                       trainable=True)
@@ -160,7 +159,7 @@ class FCGHD(Layer):
         # fc version of ghd is easier than convolution
         input_shape = self._input_shape
         l = K.constant(input_shape[1],
-                       dtype=np.float32)
+                       dtype=K.floatx())
         mean_w = K.mean(self.weight, axis=0, keepdims=True)
         mean_x = K.mean(inputs, axis=1, keepdims=True)
         hout = (2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x
