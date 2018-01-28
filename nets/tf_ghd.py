@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-from tf_interface import Net, accuracy, conv_ghd, fc_ghd
+from tf_interface import Net
+from tf_layers import conv_ghd, fc_ghd, accuracy
 
 
 class MnistNetGHD(Net):
