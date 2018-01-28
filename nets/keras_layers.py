@@ -5,8 +5,52 @@ from keras.engine import Layer
 from keras.utils import conv_utils
 
 
-def double_thresholding(hout, double_threshold):
-    pass
+def differentiable_clip(inputs, alpha, rmin, rmax):
+    return K.sigmoid(-alpha * (inputs - rmin)) + K.sigmoid(alpha * (inputs - rmax))
+
+
+def double_thresholding(ghd_layer, inputs, double_threshold, per_pixel=False):
+    input_shape = inputs.shape.as_list()
+
+    if double_threshold:
+        if per_pixel:
+            r = ghd_layer.add_weight(name='r',
+                                     shape=input_shape[1:],
+                                     dtype=np.float32,
+                                     initializer=initializers.glorot_normal(807),
+                                     regularizer=None,
+                                     trainable=True)
+        else:
+            r = ghd_layer.add_weight(name='r',
+                                     shape=(input_shape[-1],),
+                                     dtype=np.float32,
+                                     initializer=initializers.glorot_normal(829),
+                                     regularizer=None,
+                                     trainable=True)
+    else:
+        r = ghd_layer.add_weight(name='r',
+                                 shape=(input_shape[-1],),
+                                 dtype=np.float32,
+                                 initializer=initializers.zeros(),
+                                 regularizer=None,
+                                 trainable=False)
+
+    if len(input_shape) == 4:
+        axis = (1, 2)
+    else:
+        axis = (1,)
+
+    rmin = K.min(inputs, axis=axis, keepdims=True) * r
+    rmax = K.max(inputs, axis=axis, keepdims=True) * r
+
+    alpha = 0.2
+
+    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
+
+    if not double_threshold:
+        hout = K.relu(0.5 + hout)
+
+    return hout
 
 
 class ConvGHD(Layer):
@@ -53,16 +97,9 @@ class ConvGHD(Layer):
                               1),
                        dtype=np.float32)
 
-        # convolution way of mean, avg pool will produce [h, w, c]
-        # and we need mean of a block [5,5,channel], so we take mean of avg pooled image at channel axis
+        # convolution way of mean
         # output shape will be (batch, height, width, 1)
-
-        # mean_x = tf.reduce_mean(tf.nn.avg_pool(inputs,
-        #                                        ksize=[1, kernel_size[0], kernel_size[1], 1],
-        #                                        strides=[1, 1, 1, 1],
-        #                                        padding='VALID'), axis=-1, keep_dims=True)
-
-        # or it can be achieved by conv2d with constant weights
+        # it can be achieved by conv2d with constant weights
         mean_x = 1. / l * K.conv2d(inputs,
                                    kernel=self.mean_weight,
                                    strides=[1, 1],
