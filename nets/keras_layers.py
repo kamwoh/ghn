@@ -160,8 +160,8 @@ class FCGHD(Layer):
         input_shape = self._input_shape
         l = K.constant(input_shape[1],
                        dtype=K.floatx())
-        mean_w = K.mean(self.weight, axis=0, keepdims=True)
         mean_x = K.mean(inputs, axis=1, keepdims=True)
+        mean_w = K.mean(self.weight, axis=0, keepdims=True)
         hout = (2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x
         hout = double_thresholding(self, hout, self.double_threshold)
         return hout

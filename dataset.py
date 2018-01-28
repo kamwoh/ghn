@@ -1,6 +1,7 @@
 import numpy as np
 from keras.datasets import mnist
 from keras.preprocessing.image import ImageDataGenerator
+from keras.utils.np_utils import to_categorical
 
 
 def get_mnist_generator(batch_size=32,
@@ -44,7 +45,7 @@ def get_mnist(split_ratio=0.2):
     Y_train = np.expand_dims(Y_train, -1)
 
     X_test = np.expand_dims(X_test, -1)
-    Y_test = np.expand_dims(Y_test, -1)
+    Y_test = to_categorical(np.expand_dims(Y_test, -1), 10)
 
     split = int(len(X_train) * split_ratio)
     indices = np.arange(len(X_train))
@@ -52,14 +53,12 @@ def get_mnist(split_ratio=0.2):
     np.random.shuffle(indices)
 
     X_train = X_train[indices]
-    Y_train = Y_train[indices]
+    Y_train = to_categorical(Y_train[indices], 10)
 
-    X_val = X_train[:split] / 255.0
+    X_val = X_train[:split]
     Y_val = Y_train[:split]
 
-    X_train = X_train[split:] / 255.0
+    X_train = X_train[split:]
     Y_train = Y_train[split:]
-
-    X_test = X_test / 255.0
 
     return (X_train, Y_train), (X_val, Y_val), (X_test, Y_test)
