@@ -175,14 +175,13 @@ def normalize_image(img, per_image=False):
 
 def normalize_weights(weights, mode):
     if mode == 'conv':
-        if weights.shape[2] == 3:  # (h, w, c, n_filter)
-            new_weights = normalize_image(weights)
-        else:
-            new_weights = np.zeros(weights.shape)
-            for i in range(weights.shape[3]):
-                new_weights[..., i] = normalize_image(weights[..., i])
+        # if weights.shape[2] == 3:  # (h, w, c, n_filter)
+        new_weights = normalize_image(weights)
+        # else:
+        #     new_weights = np.zeros(weights.shape)
+        #     for i in range(weights.shape[3]):
+        #         new_weights[..., i] = normalize_image(weights[..., i])
         return new_weights
-
 
 def to_255(img):
     img = img * 255.0
