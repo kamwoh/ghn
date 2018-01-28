@@ -1,6 +1,6 @@
 from keras import optimizers
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Flatten, MaxPooling2D, Softmax, Conv2D, Dense
+from keras.layers import Flatten, MaxPooling2D, Softmax, Conv2D, Dense, Dropout
 from keras.models import Sequential
 
 import dataset
@@ -30,6 +30,7 @@ def main():
     ghd_model.add(FCGHD(units=1024,
                         double_threshold=double_threshold,
                         name='fc3'))
+    ghd_model.add(Dropout(0.5))
     ghd_model.add(FCGHD(units=10,
                         double_threshold=double_threshold,
                         name='fc4'))
@@ -57,22 +58,26 @@ def main():
     model.add(Conv2D(filters=16,
                      kernel_size=[5, 5],
                      input_shape=(28, 28, 1),
+                     activation='relu',
                      name='conv1'))
     model.add(MaxPooling2D(pool_size=[2, 2],
                            strides=[2, 2]))
     model.add(Conv2D(filters=64,
                      kernel_size=[5, 5],
+                     activation='relu',
                      name='conv2'))
     model.add(MaxPooling2D(pool_size=[2, 2],
                            strides=[2, 2]))
 
     model.add(Flatten())
     model.add(Dense(units=1024,
+                    activation='relu',
                     name='fc3'))
+    model.add(Dropout(0.5))
     model.add(Dense(units=10,
                     name='fc4'))
     model.add(Softmax())
-    model.compile(optimizer=optimizers.Adam(0.1),
+    model.compile(optimizer=optimizers.Adam(0.001),
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
     model.summary()
@@ -85,7 +90,7 @@ def main():
                                                                width_shift_range=0)
 
     model.fit_generator(train_gen,
-                        epochs=5,
+                        epochs=20,
                         validation_data=val_gen,
                         callbacks=[ModelCheckpoint('./keras_mnist.h5', save_best_only=True)])
 
