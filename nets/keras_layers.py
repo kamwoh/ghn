@@ -108,7 +108,7 @@ class ConvGHD(Layer):
         # mean for every filter, output shape will be (16,)
         mean_w = K.mean(self.weight, axis=(0, 1, 2), keepdims=True)
         hout = (2. / l) * conv - mean_w - mean_x
-        hout = double_thresholding(hout, self.double_threshold)
+        hout = double_thresholding(self, hout, self.double_threshold)
         return hout
 
     def compute_output_shape(self, input_shape):
@@ -146,6 +146,7 @@ class FCGHD(Layer):
         super(FCGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):
+        self._input_shape = input_shape
         self.weight = self.add_weight(name='fc_ghd_weight',
                                       shape=[input_shape[1], self.units],
                                       dtype=np.float32,
@@ -157,12 +158,13 @@ class FCGHD(Layer):
 
     def call(self, inputs, **kwargs):
         # fc version of ghd is easier than convolution
-        l = K.constant(inputs.shape.as_list()[1],
+        input_shape = self._input_shape
+        l = K.constant(input_shape[1],
                        dtype=np.float32)
         mean_w = K.mean(self.weight, axis=0, keepdims=True)
         mean_x = K.mean(inputs, axis=1, keepdims=True)
         hout = (2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x
-        hout = double_thresholding(hout, self.double_threshold)
+        hout = double_thresholding(self, hout, self.double_threshold)
         return hout
 
     def compute_output_shape(self, input_shape):
