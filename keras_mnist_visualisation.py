@@ -12,22 +12,21 @@ def main():
     model = get_mnist_net(True)
     model.load_weights('./keras_mnist_ghd.h5')
 
-    layer_idx = 1
-
-    img_disp = X_test[0]
-    img_disp = cv2.resize(img_disp, (28, 28))
-    img = img_disp[np.newaxis, :, :, :]
-    img = img.astype(np.float32)
-    # img = img - np.array([103.939, 116.779, 123.68])  # bgr
+    img_idx = 0
+    layer_idx = 0
 
     for i, layer in enumerate(model.layers):
         print(i, layer)
 
-    compute_weight = True
     is_changed = True
 
     while True:
         if is_changed:
+            img_disp = X_test[img_idx]
+            img_disp = cv2.resize(img_disp, (28, 28))
+            img = img_disp[np.newaxis, :, :, np.newaxis]
+            img = img.astype(np.float32)
+
             is_changed = False
             out = utils.activation(img, model, layer_idx)
             if len(out.shape) == 4:
@@ -45,9 +44,7 @@ def main():
             cv2.imshow('input', img_disp)
             cv2.imshow('disp', disp)
 
-        if compute_weight:
-            compute_weight = False
-            weight = model.get_weights()[0]  # only first layer is interpretable for *me*
+            weight = model.get_weights()[layer_idx]
             weight = utils.normalize_weights(weight, 'conv')
             weight = np.transpose(weight, (3, 0, 1, 2))
             weight_disp = utils.combine_and_fit(weight, is_weights=True, disp_w=400)
@@ -58,15 +55,25 @@ def main():
         if val == ord('q'):
             break
         elif val == ord('w'):
-            if layer_idx < 22:
+            if layer_idx < 8:
                 layer_idx += 1
                 is_changed = True
                 print(model.layers[layer_idx].name)
         elif val == ord('s'):
-            if layer_idx > 1:
+            if layer_idx > 0:
                 layer_idx -= 1
                 is_changed = True
                 print(model.layers[layer_idx].name)
+        elif val == ord('i'):
+            if img_idx > 0:
+                img_idx -= 1
+                is_changed = True
+                print('current img_idx', img_idx)
+        elif val == ord('k'):
+            if img_idx < len(X_test) - 1:
+                img_idx += 1
+                is_changed = True
+                print('current img_idx', img_idx)
 
 
 if __name__ == '__main__':

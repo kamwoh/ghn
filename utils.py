@@ -218,7 +218,10 @@ def combine_and_fit(data, gap=1, is_conv=False, is_fc=False, is_deconv=False, is
         x_jump = int(w * factor + gap)
         new_h = int(h * factor)
         new_w = int(w * factor)
-        img = np.zeros((height, width, 3), dtype=np.float32)
+        if data.shape[-1] == 3:
+            img = np.zeros((height, width, 3), dtype=np.float32)
+        else:
+            img = np.zeros((height, width), dtype=np.float32)
         img += 0.1
         i = 0
         for y in range(n_col):

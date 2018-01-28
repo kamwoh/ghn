@@ -15,7 +15,7 @@ def get_mnist_net(with_ghd, double_threshold=False):
                               name='conv1'))
         ghd_model.add(MaxPooling2D(pool_size=[2, 2],
                                    strides=[2, 2]))
-        ghd_model.add(Dropout(0.5))
+        # ghd_model.add(Dropout(0.5))
 
         ghd_model.add(ConvGHD(filters=64,
                               kernel_size=[5, 5],
@@ -23,7 +23,7 @@ def get_mnist_net(with_ghd, double_threshold=False):
                               name='conv2'))
         ghd_model.add(MaxPooling2D(pool_size=[2, 2],
                                    strides=[2, 2]))
-        ghd_model.add(Dropout(0.5))
+        # ghd_model.add(Dropout(0.5))
 
         ghd_model.add(Flatten())
         ghd_model.add(FCGHD(units=1024,
@@ -47,7 +47,7 @@ def get_mnist_net(with_ghd, double_threshold=False):
                          name='conv1'))
         model.add(MaxPooling2D(pool_size=[2, 2],
                                strides=[2, 2]))
-        model.add(Dropout(0.5))
+        # model.add(Dropout(0.5))
 
         model.add(Conv2D(filters=64,
                          kernel_size=[5, 5],
@@ -55,7 +55,7 @@ def get_mnist_net(with_ghd, double_threshold=False):
                          name='conv2'))
         model.add(MaxPooling2D(pool_size=[2, 2],
                                strides=[2, 2]))
-        model.add(Dropout(0.5))
+        # model.add(Dropout(0.5))
 
         model.add(Flatten())
         model.add(Dense(units=1024,
