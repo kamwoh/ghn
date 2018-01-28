@@ -9,7 +9,9 @@ This is an re-implementation of the Generalized Hamming Distance Network publish
 
 ### How to run
 ```
-python mnist_main.py
+tensorflow: python mnist_main.py # but will not save the model, for training only
+
+keras: python keras_mnist_main.py # will have both GHN and normal network
 ```
 
 ### Conv2D GHD
@@ -17,7 +19,7 @@ python mnist_main.py
 L = reduce_prod(weights.shape[:3])
 hout = 2/L * conv2d(x, w) - mean(weights) - mean(avgpool2d(x, w))
 
-for more informations, refer to nets/tf_interface.py
+for more informations, refer to nets/tf_layers.py or nets/keras_layers.py
 ```
 
 ### FC GHD
@@ -25,19 +27,33 @@ for more informations, refer to nets/tf_interface.py
 L = weights.shape[0]
 hout = 2/L * matmul(x, w) - mean(weights) - mean(x)
 
-for more informations, refer to nets/tf_interface.py
+for more informations, refer to nets/tf_layers.py or nets/keras_layers.py
+```
+
+### Network visualisation
+![alt text](visualization.png)
+```
+To run network visualisation:
+
+python keras_mnist_visualisation.py
+
+"w" & "s": go through different layers
+"i" & "k": go through different image
+"q": quit
 ```
 
 ### Mnist image classification with GHD
 ```
 Layers=[
-    GHD_Conv2D [kernel_size=5],
+    Conv2D [kernel_size=5],
     MaxPool2D,
-    GHD_Conv2D [kernel_size=5],
+    Conv2D [kernel_size=5],
     MaxPool2D,
     Flatten,
-    GHD_FC,
-    GHD_FC
+    Dropout
+    FC,
+    FC,
+    Softmax
 ]
 
 loss=CrossEntropy
@@ -52,6 +68,8 @@ As stated in the paper, at `log(48000) = 4.68`, accuracy is around 97~98%
 
 ### Reference
 [1] Fan, L. (2017). Revisit Fuzzy Neural Network: Demystifying Batch Normalization and ReLU with Generalized Hamming Network. Nokia Technologies Tampere, Finland.
+[2] https://github.com/kamwoh/deep-visualization
+[3] https://github.com/InFoCusp/tf_cnnvis
 
 ### Feedback
 Suggestions and opinions of this implementation are greatly welcome. Please contact the us by sending email to Kam Woh Ng at `kamwoh at gmail.com` or Chee Seng Chan at `cs.chan at um.edu.my`
