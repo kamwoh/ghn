@@ -19,12 +19,15 @@ def main():
                           name='conv1'))
     ghd_model.add(MaxPooling2D(pool_size=[2, 2],
                                strides=[2, 2]))
+    ghd_model.add(Dropout(0.5))
+
     ghd_model.add(ConvGHD(filters=64,
                           kernel_size=[5, 5],
                           double_threshold=double_threshold,
                           name='conv2'))
     ghd_model.add(MaxPooling2D(pool_size=[2, 2],
                                strides=[2, 2]))
+    ghd_model.add(Dropout(0.5))
 
     ghd_model.add(Flatten())
     ghd_model.add(FCGHD(units=1024,
@@ -48,7 +51,7 @@ def main():
                                                                width_shift_range=0)
 
     ghd_model.fit_generator(train_gen,
-                            epochs=5,
+                            epochs=20,
                             validation_data=val_gen,
                             callbacks=[ModelCheckpoint('./keras_mnist_ghd.h5', save_best_only=True)])
 
@@ -62,12 +65,15 @@ def main():
                      name='conv1'))
     model.add(MaxPooling2D(pool_size=[2, 2],
                            strides=[2, 2]))
+    model.add(Dropout(0.5))
+
     model.add(Conv2D(filters=64,
                      kernel_size=[5, 5],
                      activation='relu',
                      name='conv2'))
     model.add(MaxPooling2D(pool_size=[2, 2],
                            strides=[2, 2]))
+    model.add(Dropout(0.5))
 
     model.add(Flatten())
     model.add(Dense(units=1024,
