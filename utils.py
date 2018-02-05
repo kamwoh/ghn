@@ -170,7 +170,7 @@ def normalize_image(img, per_image=False):
     else:
         min_img = img.min()
         max_img = img.max()
-        return (img - min_img) / (max_img - min_img + 1e-7)
+        return to_heatmap((img - min_img) / (max_img - min_img + 1e-7))
 
 
 def normalize_weights(weights, mode):
@@ -188,6 +188,10 @@ def to_255(img):
     img = img.astype(np.uint8)
     return img
 
+
+def to_heatmap(img):
+    import matplotlib.pyplot as plt
+    return plt.cm.jet(img)
 
 def rgb_to_bgr(img):
     if len(img.shape) == 2:
