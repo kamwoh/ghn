@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 import cv2
 import numpy as np
+from keras import backend as K
 
 import dataset
 from gui.window import SettingWindow, LayerChoices
@@ -30,13 +31,17 @@ class MnistImageInput(object):
 
 
 class RealtimeModel(object):
-    def __init__(self, setting_window, init_learning_rate, init_batch_size):
+    def __init__(self, setting_window, init_learning_rate, init_batch_size, train_gen, val_gen):
         self.setting_window = setting_window
         self.learning_rate = init_learning_rate
         self.batch_size = init_batch_size
+        self.train_gen = train_gen
+        self.val_gen = val_gen
+        self.initial_epoch = 0
         self.models = {}
         self.models_layers_dict = {}
         self.models_selected_layer_name = {}
+        self.button_running = False
 
     def add_model(self, name, model, layers_dict):
         self.models[name] = model
@@ -44,21 +49,46 @@ class RealtimeModel(object):
         self.models_selected_layer_name[name] = layers_dict.values()[0]
 
     def button_onclick(self, button_type):
-        if button_type == 'epoch':
-            self.train_on_epoch()
-        elif button_type == 'batch':
-            self.train_on_batch()
-        elif button_type == 'reset':
-            self.reset()
+        if not self.button_running:
+            print('button running now')
+            self.button_running = True
+            if button_type == 'epoch':
+                self.train_on_epoch()
+            elif button_type == 'batch':
+                self.train_on_batch()
+            elif button_type == 'reset':
+                self.reset()
+            self.button_running = False
+            print('button stopped')
+        else:
+            print('button running, please wait')
 
     def train_on_batch(self):
-        pass
+        x, y = self.train_gen.next()
+        for model_name, model in self.models.iteritems():  # type: Sequential
+            model.train_on_batch(x, y)
 
     def train_on_epoch(self):
-        pass
+        for model_name, model in self.models.iteritems():  # type: Sequential
+            model.fit_generator(self.train_gen,
+                                steps_per_epoch=self.batch_size,
+                                epochs=1,
+                                validation_data=self.val_gen,
+                                validation_steps=self.batch_size,
+                                initial_epoch=self.initial_epoch)
+
+        self.initial_epoch += 1
 
     def reset(self):
-        pass
+        session = K.get_session()
+        for model_name, model in self.models.iteritems():
+            for layer in model.layers:
+                for v in layer.__dict__:
+                    v_arg = getattr(layer, v)
+                    if hasattr(v_arg, 'initializer'):
+                        initializer_method = getattr(v_arg, 'initializer')
+                        initializer_method.run(session=session)
+                        print('reinitializing layer {}.{}'.format(layer.name, v))
 
     def dropdown_callback(self, model_name, selected_layer_name):
         self.models_selected_layer_name[model_name] = selected_layer_name
