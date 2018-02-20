@@ -64,17 +64,19 @@ def to_heatmap(img):
             new_img[i] = to_heatmap(img[i])
         return new_img
     else:
-        if img.dtype != np.uint8:
+        if len(img.shape) == 3:
+            if img.dtype != np.uint8:
+                img = to_255(img)
+
+            img = img[:, :, ::-1]  # bgr to rgb
+            img = plt.cm.jet(img)
+            img = np.squeeze(img)
             img = to_255(img)
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
 
-        img = img[:, :, ::-1]  # bgr to rgb
-        img = plt.cm.jet(img)
-        img = np.squeeze(img)
-        img = to_255(img)
-        img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
-
-        return img / 255.0
-
+            return img / 255.0
+        else:
+            return img
 
 def combine_and_fit(data, gap=1, is_conv=False, is_fc=False, is_deconv=False, is_weights=False, disp_w=800):
     if len(data.shape) == 4:

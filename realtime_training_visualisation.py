@@ -148,7 +148,7 @@ class RealtimeModel(object):
 
             res = model.predict(img)[0]
             res = self.parse_predict_result(res)
-            print('result -> %s' % str(res))
+            print('%s: result -> %s' % (model_name, str(res)))
 
     def parse_predict_result(self, res):
         pred = np.argmax(res)
