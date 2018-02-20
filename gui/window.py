@@ -44,10 +44,10 @@ class SettingWindow(object):
         return button_onclick
 
     def execute_entry_callback(self):
-        learning_rate = float(self.learning_rate_var.get())
+        learning_rate = self.learning_rate_var.get()
         self.entry_callback('learning_rate', learning_rate)
 
-        batch_size = int(self.batch_size_var.get())
+        batch_size = self.batch_size_var.get()
         self.entry_callback('batch_size', batch_size)
 
     def add_empty_space(self, row, column):

@@ -25,7 +25,7 @@ def normalize(data, per_image=False):
         return normalize_image(data, per_image)
 
 
-def normalize_image(img, per_image=False):
+def normalize_image(img, per_image=False, heatmap=True):
     if per_image:
         new_img = np.zeros(img.shape)
 
@@ -37,17 +37,17 @@ def normalize_image(img, per_image=False):
         min_pixel = img.min()
         max_pixel = img.max()
         range_pixel = max_pixel - min_pixel + 1e-9
-        return to_heatmap((img - min_pixel) / range_pixel)
+        out = (img - min_pixel) / range_pixel
+        return to_heatmap(out) if heatmap else out
 
 
-def normalize_weights(weights, mode):
+def normalize_weights(weights, mode, heatmap=True):
     if mode == 'conv':
-        # if weights.shape[2] == 3:  # (h, w, c, n_filter)
-        new_weights = normalize_image(weights)
-        # else:
-        #     new_weights = np.zeros(weights.shape)
-        #     for i in range(weights.shape[3]):
-        #         new_weights[..., i] = normalize_image(weights[..., i])
+        h, w, c, n_filter = weights.shape
+        c = 3 if heatmap else 1
+        new_weights = np.zeros((h, w, c, n_filter))
+        for i in range(weights.shape[3]):
+            new_weights[..., i] = normalize_image(weights[..., i], heatmap=heatmap)
         return new_weights
 
 
@@ -58,23 +58,22 @@ def to_255(img):
 
 
 def to_heatmap(img):
-    assert len(img.shape) == 2 or img.shape[2] == 1
-
-    if img.dtype != np.uint8:
-        img = to_255(img)
-
-    img = plt.cm.jet(img)
-
-    return img / 255.0
-
-
-def rgb_to_bgr(img):
-    if len(img.shape) == 2:
-        return img
-    elif len(img.shape) == 3:
-        return img[:, :, ::-1]
+    if len(img.shape) == 4:
+        new_img = np.zeros(tuple(list(img.shape[:3]) + [3]), np.float32)
+        for i in range(len(img)):
+            new_img[i] = to_heatmap(img[i])
+        return new_img
     else:
-        return img[:, :, :, ::-1]
+        if img.dtype != np.uint8:
+            img = to_255(img)
+
+        img = img[:, :, ::-1]  # bgr to rgb
+        img = plt.cm.jet(img)
+        img = np.squeeze(img)
+        img = to_255(img)
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+
+        return img / 255.0
 
 
 def combine_and_fit(data, gap=1, is_conv=False, is_fc=False, is_deconv=False, is_weights=False, disp_w=800):
@@ -134,7 +133,11 @@ def combine_and_fit(data, gap=1, is_conv=False, is_fc=False, is_deconv=False, is
         new_w = int(w * factor)
         new_h = int(h * factor)
 
-        img = np.zeros((height, width), dtype=np.float32)
+        if data.shape[-1] == 3:
+            img = np.zeros((height, width, 3), dtype=np.float32)
+        else:
+            img = np.zeros((height, width), dtype=np.float32)
+
         img += 0.2
 
         i = 0
