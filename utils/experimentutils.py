@@ -189,6 +189,7 @@ class RealtimeModel(AbstractRealtimeModel):
     def init_tensorboard(self):
         self.summaries = {}
         self.writer = tf.summary.FileWriter(logdir=self.logdir)
+        print('tensorboard logdir -> %s' % self.logdir)
 
         # min, max, mean, histogram for weights & activations, loss
         for model_name, model in self.models.iteritems():  # type: Sequential
