@@ -103,10 +103,25 @@ def deepdream(x_input, model, out_idx, channel, step=1.0, iterations=20,
 
 
 def activation(x, model, out_idx):
+    return activations(x, model, [out_idx])[0]
+
+
+def activations(x, model, out_idxs=None, get_all=False, summaries=None):
+    if get_all:
+        outputs = [layer.output for layer in model.layers]
+        for out in outputs:
+            print('out -> ', out)
+    else:
+        assert out_idxs is not None, 'please specify out_idxs'
+        outputs = [model.layers[out_idx].output for out_idx in out_idxs]
+
+    if summaries is not None:
+        outputs.append(summaries)
+
     f = K.function([model.layers[0].input],
-                   [model.layers[out_idx].output])
-    out = f([x])[0]
-    return out
+                   outputs)
+    outs = f([x])
+    return outs
 
 
 def deconv(x, model, out_idx, batch=8, g=None, sess=None):

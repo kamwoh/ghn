@@ -18,19 +18,22 @@ def visstd(data, s=0.1, per_image=False):
         return (data - data.mean()) / max(data.std(), 1e-4) * s + 0.5
 
 
-def normalize(data, per_image=False):
+def normalize(data, per_image=False, heatmap=False):
     if len(data.shape) == 2:
-        return normalize_image(data, per_image=False)
+        return normalize_image(data, False, heatmap)
     else:
-        return normalize_image(data, per_image)
+        return normalize_image(data, per_image, heatmap)
 
 
-def normalize_image(img, per_image=False, heatmap=True):
+def normalize_image(img, per_image, heatmap):
     if per_image:
-        new_img = np.zeros(img.shape)
+        if heatmap:
+            new_img = np.zeros(list(img.shape[:3]) + [3])
+        else:
+            new_img = np.zeros(img.shape)
 
         for i in range(img.shape[0]):
-            new_img[i] = normalize_image(img[i])
+            new_img[i] = normalize_image(img[i], False, heatmap)
 
         return new_img
     else:
@@ -41,13 +44,24 @@ def normalize_image(img, per_image=False, heatmap=True):
         return to_heatmap(out) if heatmap else out
 
 
-def normalize_weights(weights, mode, heatmap=True):
+def normalize_weights(weights, mode, per_image, heatmap):
     if mode == 'conv':
-        h, w, c, n_filter = weights.shape
-        c = 3 if heatmap else 1
-        new_weights = np.zeros((h, w, c, n_filter))
-        for i in range(weights.shape[3]):
-            new_weights[..., i] = normalize_image(weights[..., i], heatmap=heatmap)
+        if per_image:
+            h, w, c, n_filter = weights.shape
+            c = 3 if heatmap else 1
+            new_weights = np.zeros((h, w, c, n_filter))
+            for i in range(weights.shape[3]):
+                new_weights[..., i] = normalize_image(weights[..., i], False, heatmap)
+        else:
+            normalized_weights = normalize_image(weights, False, False)
+            if heatmap:
+                h, w, c, n_filter = normalized_weights.shape
+                c = 3 if heatmap else 1
+                new_weights = np.zeros((h, w, c, n_filter))
+                for i in range(weights.shape[3]):
+                    new_weights[..., i] = to_heatmap(normalized_weights[..., i])
+            else:
+                new_weights = normalized_weights
         return new_weights
 
 
@@ -77,6 +91,7 @@ def to_heatmap(img):
             return img / 255.0
         else:
             return img
+
 
 def combine_and_fit(data, gap=1, is_conv=False, is_fc=False, is_deconv=False, is_weights=False, disp_w=800):
     if len(data.shape) == 4:
