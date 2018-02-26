@@ -44,26 +44,19 @@ class SettingWindow(object):
         return button_onclick
 
     def execute_entry_callback(self):
-        learning_rate = self.learning_rate_var.get()
-        self.entry_callback('learning_rate', learning_rate)
-
-        batch_size = self.batch_size_var.get()
-        self.entry_callback('batch_size', batch_size)
+        no_epoch = self.no_epoch_var.get()
+        self.entry_callback('no_epoch', no_epoch)
 
     def add_empty_space(self, row, column):
         empty_space = Label(self.mainframe)
         empty_space.grid(row=row, column=column)
 
     def setup_entries(self):
-        self.create_label(7, 1, 'learning rate')
-        self.learning_rate_var = StringVar(self.root, name='learning_rate_var')
-        learning_rate_entry = Entry(self.mainframe, textvariable=self.learning_rate_var)
-        learning_rate_entry.grid(row=7, column=2, padx=5, pady=1)
-
-        self.create_label(8, 1, 'batch size')
-        self.batch_size_var = StringVar(self.root, name='batch_size_var')
-        batch_size_entry = Entry(self.mainframe, textvariable=self.batch_size_var)
-        batch_size_entry.grid(row=8, column=2, padx=5, pady=1)
+        self.create_label(7, 1, 'number of epoch')
+        self.no_epoch_var = StringVar(self.root, name='no_epoch_var')
+        self.no_epoch_var.set('1')
+        no_epoch_entry = Entry(self.mainframe, textvariable=self.no_epoch_var)
+        no_epoch_entry.grid(row=7, column=2, padx=5, pady=1)
 
     def setup_buttons(self, button_onclick):
         button_width = 15
@@ -120,22 +113,28 @@ class SettingWindow(object):
         dropdownmenu.grid(row=row, column=column, padx=2, pady=1)
 
         self.dropdownvars[name].trace('w', dropdown_onchange)
-#
-#
-# layer_choices = LayerChoices()
-# layer_choices.add_choices('ghd', ['1'])
-# layer_choices.add_choices('bn', ['1'])
-# layer_choices.add_choices('naive', ['1'])
-#
-#
-# def button(setting_window, x):
-#     setting_window.execute_entry_callback()
-#     print(x)
-#
-#
-# def entry(y, x):
-#     print(y, x)
-#
-#
-# sw = SettingWindow(layer_choices, button, None, entry)
-# sw.mainloop()
+
+
+def test():
+    layer_choices = LayerChoices()
+    layer_choices.add_choices('ghd', ['1'])
+    layer_choices.add_choices('bn', ['1'])
+    layer_choices.add_choices('naive', ['1'])
+
+    weight_choices = LayerChoices()
+    weight_choices.add_choices('ghd', ['22'])
+    weight_choices.add_choices('bn', ['33'])
+    weight_choices.add_choices('naive', ['44'])
+
+    def button(x):
+        print(x)
+
+    def entry(y, x):
+        print(y, x)
+
+    sw = SettingWindow(layer_choices, button, None, entry)
+    sw.mainloop()
+
+
+if __name__ == '__main__':
+    test()
