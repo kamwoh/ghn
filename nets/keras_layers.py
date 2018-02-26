@@ -8,11 +8,11 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
     return K.sigmoid(-alpha * (inputs - rmin)) + K.sigmoid(alpha * (inputs - rmax))
 
 
-def double_thresholding(ghd_layer, inputs, double_threshold, per_pixel=False):
+def double_thresholding(ghd_layer, inputs):
     input_shape = inputs.shape.as_list()
 
-    if double_threshold:
-        if per_pixel:
+    if ghd_layer.double_threshold:
+        if ghd_layer.per_pixel:
             r = ghd_layer.add_weight(name='r',
                                      shape=input_shape[1:],
                                      dtype=K.floatx(),
@@ -42,18 +42,18 @@ def double_thresholding(ghd_layer, inputs, double_threshold, per_pixel=False):
     rmin = K.min(inputs, axis=axis, keepdims=True) * r
     rmax = K.max(inputs, axis=axis, keepdims=True) * r
 
-    alpha = 0.2
+    alpha = ghd_layer.alpha
 
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
 
-    if not double_threshold:
-        hout = K.relu(0.5 + hout)
+    hout = K.relu(0.5 - hout)
 
     return hout
 
 
 class ConvGHD(Layer):
-    def __init__(self, filters, kernel_size, padding='VALID', double_threshold=True, **kwargs):
+    def __init__(self, filters, kernel_size, padding='VALID', double_threshold=True, per_pixel=False, alpha=0.2,
+                 **kwargs):
         """
 
         :param filters: number of filters for convolution
@@ -65,6 +65,8 @@ class ConvGHD(Layer):
         self.kernel_size = kernel_size
         self.padding = padding.lower()
         self.double_threshold = double_threshold
+        self.per_pixel = per_pixel
+        self.alpha = alpha
         super(ConvGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -106,8 +108,8 @@ class ConvGHD(Layer):
 
         # mean for every filter, output shape will be (16,)
         mean_w = K.mean(self.weight, axis=(0, 1, 2), keepdims=True)
-        hout = (2. / l) * conv - mean_w - mean_x
-        hout = double_thresholding(self, hout, self.double_threshold)
+        hout = ((2. / l) * conv - mean_w - mean_x) * -1
+        hout = double_thresholding(self, hout)
         return hout
 
     def compute_output_shape(self, input_shape):
@@ -132,7 +134,7 @@ class ConvGHD(Layer):
 
 
 class FCGHD(Layer):
-    def __init__(self, units, double_threshold=True, **kwargs):
+    def __init__(self, units, double_threshold=True, per_pixel=False, alpha=0.2, **kwargs):
         """
 
         :param filters: number of filters for convolution
@@ -142,6 +144,8 @@ class FCGHD(Layer):
         """
         self.units = units
         self.double_threshold = double_threshold
+        self.per_pixel = per_pixel
+        self.alpha = alpha
         super(FCGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -162,8 +166,8 @@ class FCGHD(Layer):
                        dtype=K.floatx())
         mean_x = K.mean(inputs, axis=1, keepdims=True)
         mean_w = K.mean(self.weight, axis=0, keepdims=True)
-        hout = (2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x
-        hout = double_thresholding(self, hout, self.double_threshold)
+        hout = ((2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x) * -1
+        hout = double_thresholding(self, hout)
         return hout
 
     def compute_output_shape(self, input_shape):
