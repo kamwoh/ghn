@@ -20,15 +20,22 @@ class SummaryCallback(Callback):
         self.global_steps = global_steps
         self.test_gen = test_gen
 
-    def on_epoch_begin(self, epoch, logs=None):
-        super(SummaryCallback, self).on_epoch_begin(epoch, logs)
+    def add_summary(self, epoch):
         f = K.function([self.model.layers[0].input] + self.model.targets,
                        [self.summaries])
         x, y = next(self.test_gen)
         x, y = x[np.newaxis, ...], y[np.newaxis, ...]
         random_index = random.choice(range(len(x)))
         summ = f([x[random_index], y[random_index]])[0]
-        self.writer.add_summary(summ, global_step=self.global_steps)
+        self.writer.add_summary(summ, global_step=epoch)
+
+    def on_train_begin(self, logs=None):
+        super(SummaryCallback, self).on_train_begin(logs)
+        self.add_summary(0)
+
+    def on_epoch_end(self, epoch, logs=None):
+        super(SummaryCallback, self).on_epoch_end(epoch, logs)
+        self.add_summary(epoch)
 
 
 class AbstractRealtimeModel(object):
@@ -48,7 +55,6 @@ class RealtimeModel(AbstractRealtimeModel):
         self.graph = graph
         self.sess = sess
         self.logdir = logdir
-        self.is_changed = True
         self.learning_rate = init_learning_rate
         self.batch_size = init_batch_size
         self.train_gen = train_gen
@@ -63,7 +69,8 @@ class RealtimeModel(AbstractRealtimeModel):
         self.button_running = False
         self.setting_window = SettingWindow(layer_choices, self.button_onclick, self.dropdown_callback,
                                             self.entry_callback)
-        self.global_steps = 0
+        self.global_steps = 1
+        self.is_changed = True
         self.activation_per_filter = True
         self.weight_per_filter = True
         self.activation_heatmap = True
