@@ -35,16 +35,16 @@ def get_mnist_generator(batch_size=32,
     test_gen = valtest_gen.flow(X_test, Y_test,
                                 batch_size=batch_size,
                                 seed=777)
-    return train_gen, val_gen, test_gen
+    return train_gen, val_gen, test_gen, (valtest_gen.mean, valtest_gen.std)
 
 
 def get_mnist(split_ratio=0.2):
     (X_train, Y_train), (X_test, Y_test) = mnist.load_data()
 
-    X_train = np.expand_dims(X_train, -1)
+    X_train = np.expand_dims(X_train, -1) / 255.0
     Y_train = np.expand_dims(Y_train, -1)
 
-    X_test = np.expand_dims(X_test, -1)
+    X_test = np.expand_dims(X_test, -1) / 255.0
     Y_test = to_categorical(np.expand_dims(Y_test, -1), 10)
 
     split = int(len(X_train) * split_ratio)
