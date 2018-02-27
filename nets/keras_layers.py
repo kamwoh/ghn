@@ -5,58 +5,53 @@ from keras.utils import conv_utils
 
 
 def differentiable_clip(inputs, alpha, rmin, rmax):
+    """
+    Output from this clipping function is something like below:
+    ___            ___
+       \          /
+        \        /
+         \      /
+          \____/
+    """
     return K.sigmoid(-alpha * (inputs - rmin)) + K.sigmoid(alpha * (inputs - rmax))
 
 
 def double_thresholding(ghd_layer, inputs):
-    # inputs = inputs * -1
     input_shape = inputs.shape.as_list()
 
-    if ghd_layer.double_threshold:
-        if ghd_layer.per_pixel:
-            r = ghd_layer.add_weight(name='r',
-                                     shape=input_shape[1:],
-                                     dtype=K.floatx(),
-                                     initializer=initializers.glorot_normal(807),
-                                     regularizer=None,
-                                     trainable=True)
-        else:
-            r = ghd_layer.add_weight(name='r',
-                                     shape=(input_shape[-1],),
-                                     dtype=K.floatx(),
-                                     initializer=initializers.glorot_normal(829),
-                                     regularizer=None,
-                                     trainable=True)
-    else:
-        r = ghd_layer.add_weight(name='r',
-                                 shape=(input_shape[-1],),
-                                 dtype=K.floatx(),
-                                 initializer=initializers.zeros(),
-                                 regularizer=None,
-                                 trainable=False)
+    shape = input_shape[1:] if ghd_layer.per_pixel else (input_shape[-1],)
+
+    r1 = ghd_layer.add_weight(name='r1',
+                              shape=shape,
+                              dtype=K.floatx(),
+                              initializer=initializers.glorot_normal(807),
+                              regularizer=None,
+                              trainable=ghd_layer.double_threshold)
+    r2 = ghd_layer.add_weight(name='r2',
+                              shape=shape,
+                              dtype=K.floatx(),
+                              initializer=initializers.glorot_normal(807),
+                              regularizer=None,
+                              trainable=ghd_layer.double_threshold)
 
     if len(input_shape) == 4:
         axis = (1, 2)
     else:
         axis = (1,)
 
-    rmin = K.min(inputs, axis=axis, keepdims=True) * r
-    rmax = K.max(inputs, axis=axis, keepdims=True) * r
+    rmin = K.min(inputs, axis=axis, keepdims=True) * r1
+    rmax = K.max(inputs, axis=axis, keepdims=True) * r2
 
     alpha = ghd_layer.alpha
 
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
-
-    if ghd_layer.relu:
-        # hout = K.relu(0.5 + hout)
-        hout = K.relu(0.5 - hout)
 
     return hout
 
 
 class ConvGHD(Layer):
     def __init__(self, filters, kernel_size, padding='VALID', double_threshold=True, per_pixel=False, alpha=0.2,
-                 relu=True, **kwargs):
+                 **kwargs):
         """
 
         :param filters: number of filters for convolution
@@ -70,7 +65,6 @@ class ConvGHD(Layer):
         self.double_threshold = double_threshold
         self.per_pixel = per_pixel
         self.alpha = alpha
-        self.relu = relu
         super(ConvGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -112,7 +106,7 @@ class ConvGHD(Layer):
 
         # mean for every filter, output shape will be (16,)
         mean_w = K.mean(self.weight, axis=(0, 1, 2), keepdims=True)
-        hout = ((2. / l) * conv - mean_w - mean_x) * -1
+        hout = (2. / l) * conv - mean_w - mean_x
         hout = double_thresholding(self, hout)
         return hout
 
@@ -138,7 +132,7 @@ class ConvGHD(Layer):
 
 
 class FCGHD(Layer):
-    def __init__(self, units, double_threshold=True, per_pixel=False, alpha=0.2, relu=True, **kwargs):
+    def __init__(self, units, double_threshold=True, per_pixel=False, alpha=0.2, **kwargs):
         """
 
         :param filters: number of filters for convolution
@@ -150,7 +144,6 @@ class FCGHD(Layer):
         self.double_threshold = double_threshold
         self.per_pixel = per_pixel
         self.alpha = alpha
-        self.relu = relu
         super(FCGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -171,7 +164,7 @@ class FCGHD(Layer):
                        dtype=K.floatx())
         mean_x = K.mean(inputs, axis=1, keepdims=True)
         mean_w = K.mean(self.weight, axis=0, keepdims=True)
-        hout = ((2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x) * -1
+        hout = (2. / l) * K.dot(inputs, self.weight) - mean_w - mean_x
         hout = double_thresholding(self, hout)
         return hout
 

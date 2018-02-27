@@ -84,19 +84,18 @@ def main():
             batch_size = 64
             learning_rate = 0.1
 
-            double_threshold = False
-            per_pixel = True
+            double_threshold = True
+            per_pixel = False
             alpha = 0.2
-            relu = True
-            ghd_model = ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha, relu)
+            ghd_model = ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha)
             # if os.path.exists('./keras_mnist_ghd.h5'):
             #     ghd_model.load_weights('./keras_mnist_ghd.h5')
 
-            bn_model = bn_mnist_model(learning_rate)
+            # bn_model = bn_mnist_model(learning_rate)
             # if os.path.exists('./keras_mnist_bn.h5'):
             #     bn_model.load_weights('./keras_mnist_bn.h5')
 
-            naive_model = naive_mnist_model(learning_rate / 1000.)
+            # naive_model = naive_mnist_model(learning_rate / 1000.)
             # if os.path.exists('./keras_mnist_naive.h5'):
             #     naive_model.load_weights('./keras_mnist_naive.h5')
 
@@ -118,34 +117,34 @@ def main():
             ghd_weights = map(lambda weight: weight.name,
                               filter(lambda weight: len(weight.shape) == 4, ghd_model.trainable_weights))
 
-            bn_layers = [layer.name for layer in bn_model.layers]
-            bn_weights = [weight.name for weight in bn_model.trainable_weights]
-            bn_layers_dict = to_dict(bn_layers)
-            bn_weights_dict = filter_conv(to_dict(bn_weights), bn_model)
-            bn_weights = map(lambda weight: weight.name,
-                             filter(lambda weight: len(weight.shape) == 4, bn_model.trainable_weights))
+            # bn_layers = [layer.name for layer in bn_model.layers]
+            # bn_weights = [weight.name for weight in bn_model.trainable_weights]
+            # bn_layers_dict = to_dict(bn_layers)
+            # bn_weights_dict = filter_conv(to_dict(bn_weights), bn_model)
+            # bn_weights = map(lambda weight: weight.name,
+            #                  filter(lambda weight: len(weight.shape) == 4, bn_model.trainable_weights))
 
-            naive_layers = [layer.name for layer in naive_model.layers]
-            naive_weights = [weight.name for weight in naive_model.trainable_weights]
-            naive_layers_dict = to_dict(naive_layers)
-            naive_weights_dict = filter_conv(to_dict(naive_weights), naive_model)
-            naive_weights = map(lambda weight: weight.name,
-                                filter(lambda weight: len(weight.shape) == 4, naive_model.trainable_weights))
+            # naive_layers = [layer.name for layer in naive_model.layers]
+            # naive_weights = [weight.name for weight in naive_model.trainable_weights]
+            # naive_layers_dict = to_dict(naive_layers)
+            # naive_weights_dict = filter_conv(to_dict(naive_weights), naive_model)
+            # naive_weights = map(lambda weight: weight.name,
+            #                     filter(lambda weight: len(weight.shape) == 4, naive_model.trainable_weights))
 
             layer_choices = LayerChoices()
             layer_choices.add_choices('ghd', ghd_layers)
             layer_choices.add_choices('ghd_weights', ghd_weights)
-            layer_choices.add_choices('bn', bn_layers)
-            layer_choices.add_choices('bn_weights', bn_weights)
-            layer_choices.add_choices('naive', naive_layers)
-            layer_choices.add_choices('naive_weights', naive_weights)
+            # layer_choices.add_choices('bn', bn_layers)
+            # layer_choices.add_choices('bn_weights', bn_weights)
+            # layer_choices.add_choices('naive', naive_layers)
+            # layer_choices.add_choices('naive_weights', naive_weights)
 
             realtime_model = RealtimeModel(graph, sess, layer_choices, learning_rate, batch_size, train_gen, val_gen,
                                            test_gen,
                                            logdir='tensorboard/%s' % get_current_time_in_string())
             realtime_model.add_model('ghd', ghd_model, ghd_layers_dict, ghd_weights_dict)
-            realtime_model.add_model('bn', bn_model, bn_layers_dict, bn_weights_dict)
-            realtime_model.add_model('naive', naive_model, naive_layers_dict, naive_weights_dict)
+            # realtime_model.add_model('bn', bn_model, bn_layers_dict, bn_weights_dict)
+            # realtime_model.add_model('naive', naive_model, naive_layers_dict, naive_weights_dict)
 
             realtime_model.init_tensorboard()
 
