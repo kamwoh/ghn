@@ -75,6 +75,16 @@ At the end of first epoch with `learning rate = 0.1, r = 0`, validation and test
 
 As stated in the paper, at `log(48000) = 4.68`, accuracy is around 97~98%
 
+Result in table after 1 epoch
+
+| Double Threshold & Relu | Loss   | Accuracy |
+| ----------------------- | ------ | -------- |
+| True & True             | 0.1342 | 95.93%   |
+| True & False            | 0.272  | 90.90%   |
+| False & True            | 0.2606 | 91.22%   |
+| False & False           | 0.308  | 89.01%   |
+
+
 ### Reference
 [1] Fan, L. (2017). Revisit Fuzzy Neural Network: Demystifying Batch Normalization and ReLU with Generalized Hamming Network. Nokia Technologies Tampere, Finland.
 [2] https://github.com/kamwoh/deep-visualization
