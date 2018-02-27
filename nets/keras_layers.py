@@ -9,6 +9,7 @@ def differentiable_clip(inputs, alpha, rmin, rmax):
 
 
 def double_thresholding(ghd_layer, inputs):
+    # inputs = inputs * -1
     input_shape = inputs.shape.as_list()
 
     if ghd_layer.double_threshold:
@@ -46,14 +47,16 @@ def double_thresholding(ghd_layer, inputs):
 
     hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
 
-    hout = K.relu(0.5 - hout)
+    if ghd_layer.relu:
+        # hout = K.relu(0.5 + hout)
+        hout = K.relu(0.5 - hout)
 
     return hout
 
 
 class ConvGHD(Layer):
     def __init__(self, filters, kernel_size, padding='VALID', double_threshold=True, per_pixel=False, alpha=0.2,
-                 **kwargs):
+                 relu=True, **kwargs):
         """
 
         :param filters: number of filters for convolution
@@ -67,6 +70,7 @@ class ConvGHD(Layer):
         self.double_threshold = double_threshold
         self.per_pixel = per_pixel
         self.alpha = alpha
+        self.relu = relu
         super(ConvGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -134,7 +138,7 @@ class ConvGHD(Layer):
 
 
 class FCGHD(Layer):
-    def __init__(self, units, double_threshold=True, per_pixel=False, alpha=0.2, **kwargs):
+    def __init__(self, units, double_threshold=True, per_pixel=False, alpha=0.2, relu=True, **kwargs):
         """
 
         :param filters: number of filters for convolution
@@ -146,6 +150,7 @@ class FCGHD(Layer):
         self.double_threshold = double_threshold
         self.per_pixel = per_pixel
         self.alpha = alpha
+        self.relu = relu
         super(FCGHD, self).__init__(**kwargs)
 
     def build(self, input_shape):

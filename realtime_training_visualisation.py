@@ -85,9 +85,10 @@ def main():
             learning_rate = 0.1
 
             double_threshold = False
-            per_pixel = False
+            per_pixel = True
             alpha = 0.2
-            ghd_model = ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha)
+            relu = True
+            ghd_model = ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha, relu)
             # if os.path.exists('./keras_mnist_ghd.h5'):
             #     ghd_model.load_weights('./keras_mnist_ghd.h5')
 
@@ -152,6 +153,7 @@ def main():
             thread.setDaemon(True)
             thread.start()
 
+            # realtime_model.train_on_epoch()
             realtime_model.setting_window.mainloop()
 
     print('closing -> %s' % sess.close())

@@ -6,7 +6,7 @@ from keras.models import Sequential
 from keras_layers import ConvGHD, FCGHD
 
 
-def ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha):
+def ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha, relu):
     with tf.variable_scope('ghn'):
         model = Sequential()
         model.add(ConvGHD(filters=16,
@@ -14,6 +14,7 @@ def ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha):
                           double_threshold=double_threshold,
                           per_pixel=per_pixel,
                           alpha=alpha,
+                          relu=relu,
                           input_shape=(28, 28, 1),
                           name='conv1'))
         model.add(MaxPooling2D(pool_size=[2, 2],
@@ -23,6 +24,7 @@ def ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha):
                           double_threshold=double_threshold,
                           per_pixel=per_pixel,
                           alpha=alpha,
+                          relu=relu,
                           name='conv2'))
         model.add(MaxPooling2D(pool_size=[2, 2],
                                strides=[2, 2]))
@@ -31,12 +33,14 @@ def ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha):
                         double_threshold=double_threshold,
                         per_pixel=per_pixel,
                         alpha=alpha,
+                        relu=relu,
                         name='fc3'))
         model.add(Dropout(0.5))
         model.add(FCGHD(units=10,
                         double_threshold=double_threshold,
                         per_pixel=per_pixel,
                         alpha=alpha,
+                        relu=relu,
                         name='fc4'))
         model.add(Softmax())
         model.compile(optimizer=optimizers.Adam(learning_rate),
