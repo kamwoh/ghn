@@ -37,32 +37,72 @@ def normalize_image(img, per_image, heatmap):
 
         return new_img
     else:
-        min_pixel = img.min()
-        max_pixel = img.max()
-        range_pixel = max_pixel - min_pixel + 1e-9
-        out = (img - min_pixel) / range_pixel
-        return to_heatmap(out) if heatmap else out
+        return normalize_single_image(img, heatmap)
 
 
-def normalize_weights(weights, mode, per_image, heatmap):
+def normalize_single_image(img, heatmap):
+    min_pixel = img.min()
+    max_pixel = img.max()
+    range_pixel = max_pixel - min_pixel + 1e-9
+    out = (img - min_pixel) / range_pixel
+    return to_heatmap(out) if heatmap else out
+
+
+def normalize_weights(weights, mode, per_image, heatmap, first_layer):
     if mode == 'conv':
-        if per_image:
-            h, w, c, n_filter = weights.shape
-            c = 3 if heatmap else 1
+        if first_layer:
+            return normalize_first_layer_conv_weights(weights, per_image, heatmap)
+        else:
+            return normalize_conv_weights(weights, per_image, heatmap)
+
+
+def normalize_first_layer_conv_weights(weights, per_image, heatmap):
+    if per_image:
+        h, w, c, n_filter = weights.shape
+        c = 3 if heatmap else c
+        new_weights = np.zeros((h, w, c, n_filter))
+        for i in range(weights.shape[3]):
+            new_weights[..., i] = normalize_image(weights[..., i], False, heatmap)
+    else:
+        normalized_weights = normalize_image(weights, False, False)
+        if heatmap:
+            h, w, c, n_filter = normalized_weights.shape
+            c = 3 if heatmap else c
             new_weights = np.zeros((h, w, c, n_filter))
             for i in range(weights.shape[3]):
-                new_weights[..., i] = normalize_image(weights[..., i], False, heatmap)
+                new_weights[..., i] = to_heatmap(normalized_weights[..., i])
         else:
-            normalized_weights = normalize_image(weights, False, False)
-            if heatmap:
-                h, w, c, n_filter = normalized_weights.shape
-                c = 3 if heatmap else 1
-                new_weights = np.zeros((h, w, c, n_filter))
-                for i in range(weights.shape[3]):
-                    new_weights[..., i] = to_heatmap(normalized_weights[..., i])
-            else:
-                new_weights = normalized_weights
-        return new_weights
+            new_weights = normalized_weights
+
+    return new_weights
+
+
+def normalize_conv_weights(weights, per_image, heatmap):
+    # output -> h,w,c,n -> h,w,c,n,3 if heatmap
+    if per_image:
+        h, w, c, n_filter = weights.shape
+        new_weights = np.zeros((h, w, c, n_filter))  # h,w,c,n
+        for i in range(weights.shape[3]):
+            new_weights[..., i] = normalize_image(weights[..., i], False, False)
+    else:
+        new_weights = normalize_image(weights, False, False)
+
+    if heatmap:
+        new_weights = heatmap_on_conv_weights(new_weights)
+    else:
+        new_weights = np.expand_dims(new_weights, 4)  # to indicate it is 2nd conv and above
+    return new_weights
+
+
+def heatmap_on_conv_weights(weights):
+    h, w, c, n_filter = weights.shape
+    heatmap_weights = np.zeros((h, w, c, n_filter, 3))
+    for i in range(weights.shape[3]):
+        for j in range(weights.shape[2]):
+            heatmap_weight = to_heatmap(weights[..., j, i])
+            for c in range(3):
+                heatmap_weights[..., j, i, c] = heatmap_weight[..., c]
+    return heatmap_weights
 
 
 def to_255(img):
@@ -89,101 +129,153 @@ def to_heatmap(img):
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
 
             return img / 255.0
+        elif len(img.shape) == 2:
+            return to_heatmap(np.expand_dims(img, 2))
         else:
             return img
 
 
-def combine_and_fit(data, gap=1, is_conv=False, is_fc=False, is_deconv=False, is_weights=False, disp_w=800):
-    if len(data.shape) == 4:
-        h, w = data.shape[1:3]
-        if disp_w is None:
-            disp_w = data.shape[0] * w  # default shape
+def combine_and_fit(data, gap=2, is_conv=False, is_fc=False, is_deconv=False, is_weights=False, disp_w=200):
+    if len(data.shape) == 5:
+        return fit_conv_weights(data, disp_w, gap)
+    elif is_deconv or is_weights:
+        return fit_first_layer_weights(data, disp_w, gap)
     else:
-        h, w = 1, 1
+        return fit_conv_or_fc(data, is_conv, is_fc, disp_w, gap)
 
+
+def fit_first_layer_weights(data, disp_w, gap):
+    total, h, w, c = data.shape
+    n_col = int(math.ceil(math.sqrt(total)))
+    n_col_gap = n_col - 1
+    factor = (disp_w - n_col_gap * gap) / float(n_col * w)
+    width = int(n_col * w * factor + n_col_gap * gap)
+    height = int(n_col * h * factor + n_col_gap * gap)
+    y_jump = int(h * factor + gap)
+    x_jump = int(w * factor + gap)
+    new_h = int(h * factor)
+    new_w = int(w * factor)
+    if data.shape[-1] == 3:
+        img = np.zeros((height, width, 3), dtype=np.float32)
+    else:
+        img = np.zeros((height, width), dtype=np.float32)
+    img += 0.1
+    i = 0
+    for y in range(n_col):
+        y = y * y_jump
+        for x in range(n_col):
+            if i >= total:
+                break
+
+            x = x * x_jump
+            to_y = y + int(h * factor)
+            to_x = x + int(w * factor)
+            img[y:to_y, x:to_x] = cv2.resize(data[i], (new_w, new_h),
+                                             interpolation=cv2.INTER_AREA)
+            i += 1
+    return img
+
+
+def fit_conv_weights(data, disp_w, gap):
+    total, h, w, c, heatmap_c = data.shape
+    total *= c
+    n_col = int(math.ceil(math.sqrt(total)))
+    n_col_gap = n_col - 1
+    factor = (disp_w - n_col_gap * gap) / float(n_col * w)
+    width = int(n_col * w * factor + n_col_gap * gap)
+    height = int(n_col * h * factor + n_col_gap * gap)
+    y_jump = int(h * factor + gap)
+    x_jump = int(w * factor + gap)
+    new_h = int(h * factor)
+    new_w = int(w * factor)
+    if data.shape[-1] == 3:
+        img = np.zeros((height, width, 3), dtype=np.float32)
+    else:
+        img = np.zeros((height, width), dtype=np.float32)
+    img += 0.1
+    i = 0
+    input_channel_count = 1
+    random_shape = () if len(img.shape) == 2 else (3)
+    random_color = np.random.random(random_shape)
+    for y in range(n_col):
+        y = y * y_jump
+        for x in range(n_col):
+            if i >= total:
+                break
+
+            x = x * x_jump
+            to_y = y + int(h * factor)
+            to_x = x + int(w * factor)
+            img[y:to_y, x:to_x] = cv2.resize(data[i, :, :, input_channel_count - 1], (new_w, new_h),
+                                             interpolation=cv2.INTER_AREA)
+            img[to_y:to_y + 3, x:to_x] = random_color
+            img[y:to_y, to_x:to_x + 3] = random_color
+
+            if input_channel_count % c == 0:
+                random_color = np.random.random(random_shape)
+                input_channel_count = 0
+                i += 1
+
+            input_channel_count += 1
+    return img
+
+
+def fit_conv_or_fc(data, is_conv, is_fc, disp_w, gap):
+    h, w = data.shape[1:3]
     total = len(data)
-    if is_deconv or is_weights:
-        n_col = int(math.ceil(math.sqrt(total)))
-        n_col_gap = n_col - 1
-        factor = (disp_w - n_col_gap * gap) / float(n_col * w)
-        width = int(n_col * w * factor + n_col_gap * gap)
-        height = int(n_col * h * factor + n_col_gap * gap)
-        y_jump = int(h * factor + gap)
-        x_jump = int(w * factor + gap)
-        new_h = int(h * factor)
-        new_w = int(w * factor)
-        if data.shape[-1] == 3:
-            img = np.zeros((height, width, 3), dtype=np.float32)
-        else:
-            img = np.zeros((height, width), dtype=np.float32)
-        img += 0.1
-        i = 0
-        for y in range(n_col):
-            y = y * y_jump
-            for x in range(n_col):
-                if i >= total:
-                    break
 
-                x = x * x_jump
-                to_y = y + int(h * factor)
-                to_x = x + int(w * factor)
-                img[y:to_y, x:to_x] = cv2.resize(data[i], (new_w, new_h),
-                                                 interpolation=cv2.INTER_AREA)
-                i += 1
-        return img
+    if is_conv or is_fc:
+        n_row = int(math.ceil(math.sqrt(total)))
+        n_col = n_row
     else:
-        if is_conv or is_fc:
-            n_row = int(math.ceil(math.sqrt(total)))
-            n_col = n_row
-        else:
-            n_row = total
-            n_col = data.shape[-1]
+        n_row = total
+        n_col = data.shape[-1]
 
-        n_col_gap = n_col - 1
-        n_row_gap = n_row - 1
+    n_col_gap = n_col - 1
+    n_row_gap = n_row - 1
 
-        factor = (disp_w - n_col_gap * gap) / float(n_col * w)
-        width = int(n_col * w * factor + n_col_gap * gap)
-        height = int(n_row * h * factor + n_row_gap * gap)
-        y_jump = int(h * factor + gap)
-        x_jump = int(w * factor + gap)
-        new_w = int(w * factor)
-        new_h = int(h * factor)
+    factor = (disp_w - n_col_gap * gap) / float(n_col * w)
+    width = int(n_col * w * factor + n_col_gap * gap)
+    height = int(n_row * h * factor + n_row_gap * gap)
+    y_jump = int(h * factor + gap)
+    x_jump = int(w * factor + gap)
+    new_w = int(w * factor)
+    new_h = int(h * factor)
 
-        if data.shape[-1] == 3:
-            img = np.zeros((height, width, 3), dtype=np.float32)
-        else:
-            img = np.zeros((height, width), dtype=np.float32)
+    if data.shape[-1] == 3:
+        img = np.zeros((height, width, 3), dtype=np.float32)
+    else:
+        img = np.zeros((height, width), dtype=np.float32)
 
-        img += 0.2
+    img += 0.2
 
-        i = 0
-        for y in range(n_row):
-            y = y * y_jump
-            j = 0
-            for x in range(n_col):
-                x = x * x_jump
+    i = 0
+    for y in range(n_row):
+        y = y * y_jump
+        j = 0
+        for x in range(n_col):
+            x = x * x_jump
 
-                if i >= total:
-                    break
+            if i >= total:
+                break
 
-                if is_conv:
-                    d = data[i, :, :]
-                elif is_fc:
-                    d = data[i]
-                else:
-                    d = data[i, :, :, j]
+            if is_conv:
+                d = data[i, :, :]
+            elif is_fc:
+                d = data[i]
+            else:
+                d = data[i, :, :, j]
 
-                to_y = y + int(h * factor)
-                to_x = x + int(w * factor)
-                img[y:to_y, x:to_x] = cv2.resize(d, (new_w, new_h),
-                                                 interpolation=cv2.INTER_AREA)
+            to_y = y + int(h * factor)
+            to_x = x + int(w * factor)
+            img[y:to_y, x:to_x] = cv2.resize(d, (new_w, new_h),
+                                             interpolation=cv2.INTER_AREA)
 
-                if is_conv or is_fc:
-                    i += 1
-                else:
-                    j += 1
-
-            if not is_conv and not is_fc:
+            if is_conv or is_fc:
                 i += 1
-        return img
+            else:
+                j += 1
+
+        if not is_conv and not is_fc:
+            i += 1
+    return img

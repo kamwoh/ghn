@@ -67,6 +67,15 @@ def visualise_thread(img_input, realtime_model):
                     realtime_model.is_changed = True
 
 
+def filter_conv(old_dict, model):
+    new_dict = OrderedDict()
+    for weight_name, idx in old_dict.items():
+        if len(model.trainable_weights[idx].shape) == 4:  # only conv weight
+            print(weight_name, idx)
+            new_dict[weight_name] = idx
+    return new_dict
+
+
 def main():
     graph = tf.Graph()
     with graph.as_default():
@@ -104,15 +113,23 @@ def main():
             ghd_layers = [layer.name for layer in ghd_model.layers]
             ghd_weights = [weight.name for weight in ghd_model.trainable_weights]
             ghd_layers_dict = to_dict(ghd_layers)
-            ghd_weights_dict = to_dict(ghd_weights)
+            ghd_weights_dict = filter_conv(to_dict(ghd_weights), ghd_model)
+            ghd_weights = map(lambda weight: weight.name,
+                              filter(lambda weight: len(weight.shape) == 4, ghd_model.trainable_weights))
+
             bn_layers = [layer.name for layer in bn_model.layers]
             bn_weights = [weight.name for weight in bn_model.trainable_weights]
             bn_layers_dict = to_dict(bn_layers)
-            bn_weights_dict = to_dict(bn_weights)
+            bn_weights_dict = filter_conv(to_dict(bn_weights), bn_model)
+            bn_weights = map(lambda weight: weight.name,
+                             filter(lambda weight: len(weight.shape) == 4, bn_model.trainable_weights))
+
             naive_layers = [layer.name for layer in naive_model.layers]
             naive_weights = [weight.name for weight in naive_model.trainable_weights]
             naive_layers_dict = to_dict(naive_layers)
-            naive_weights_dict = to_dict(naive_weights)
+            naive_weights_dict = filter_conv(to_dict(naive_weights), naive_model)
+            naive_weights = map(lambda weight: weight.name,
+                                filter(lambda weight: len(weight.shape) == 4, naive_model.trainable_weights))
 
             layer_choices = LayerChoices()
             layer_choices.add_choices('ghd', ghd_layers)

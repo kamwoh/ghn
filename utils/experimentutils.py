@@ -148,9 +148,14 @@ class RealtimeModel(AbstractRealtimeModel):
         print('weight per filter -> %s, heatmap -> %s' % (self.weight_per_filter, self.weight_heatmap))
         weight = model.trainable_weights[weight_idx]
         weight = K.batch_get_value([weight])[0]
-        weight = imageutils.normalize_weights(weight, 'conv', self.weight_per_filter, self.weight_heatmap)
-        weight = np.transpose(weight, (3, 0, 1, 2))
-        weight_disp = imageutils.combine_and_fit(weight, is_weights=True, disp_w=200)
+        first_layer = weight.shape[2] == 1 or weight.shape[2] == 3
+        print('weight.shape -> %s' % list(weight.shape))
+        weight = imageutils.normalize_weights(weight, 'conv', self.weight_per_filter, self.weight_heatmap, first_layer)
+        perm = (3, 0, 1, 2) if first_layer else (3, 0, 1, 2, 4)
+        weight = np.transpose(weight, perm)  # h,w,c,n -> n,h,w,c
+        disp_w = 200 if first_layer else 800
+        gap = 2 if first_layer else 5
+        weight_disp = imageutils.combine_and_fit(weight, is_weights=True, disp_w=disp_w, gap=gap)
         return weight_disp
 
     def get_activation(self, img, model, model_layer_idx):
@@ -172,6 +177,7 @@ class RealtimeModel(AbstractRealtimeModel):
 
     def visualise(self, img):
         for model_name, model in self.models.iteritems():
+            print('------- %s -------' % model_name)
             layer_name = self.models_selected_layer_name[model_name]
             layer_idx = self.models_layers_dict[model_name][layer_name]
 
@@ -186,7 +192,9 @@ class RealtimeModel(AbstractRealtimeModel):
 
             res = model.predict(img)[0]
             res = self.parse_predict_result(res)
-            print('%s: result -> %s' % (model_name, str(res)))
+            print('prediction result -> %s' % str(res))
+            print
+        print
 
     def parse_predict_result(self, res):
         pred = np.argmax(res)
