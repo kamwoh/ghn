@@ -34,10 +34,15 @@ class SummaryCallback(Callback):
         if self.global_steps == 1:
             self.add_summary(0)
 
-    def on_epoch_end(self, epoch, logs=None):
-        super(SummaryCallback, self).on_epoch_end(epoch, logs)
-        self.add_summary(self.global_steps)
-        self.global_steps += 1
+    def on_batch_end(self, batch, logs=None):
+        if batch % 10 == 0:
+            self.add_summary(self.global_steps)
+            self.global_steps += 1
+
+    # def on_epoch_end(self, epoch, logs=None):
+    #     super(SummaryCallback, self).on_epoch_end(epoch, logs)
+    #     self.add_summary(self.global_steps)
+    #     self.global_steps += 1
 
 
 class AbstractRealtimeModel(object):
@@ -62,7 +67,7 @@ class RealtimeModel(AbstractRealtimeModel):
         self.train_gen = train_gen
         self.test_gen = test_gen
         self.val_gen = val_gen
-        self.no_epoch = 1
+        self.no_epoch = 3
         self.models = {}
         self.models_layers_dict = {}
         self.models_weights_dict = {}
@@ -120,7 +125,7 @@ class RealtimeModel(AbstractRealtimeModel):
                                                            self.global_steps,
                                                            self.test_gen)])
 
-        self.global_steps += self.no_epoch  # epoch
+        self.global_steps += int(self.no_epoch * (self.train_gen.batch_size / self.train_gen.n))  # epoch
         # self.global_steps += self.train_gen.n / self.batch_size # batch
 
     def reset(self):
@@ -200,6 +205,21 @@ class RealtimeModel(AbstractRealtimeModel):
         prob = res[pred]
         return pred, prob
 
+    def record_in_tensorboard(self, summary_inputs, postfix_name, tensor):
+        min_weight = K.min(tensor)
+        max_weight = K.max(tensor)
+        mean_weight = K.mean(tensor)
+
+        if postfix_name != '':
+            postfix_name = '_' + postfix_name
+
+        summary_inputs.append(tf.summary.scalar('min' + postfix_name, min_weight))
+        summary_inputs.append(tf.summary.scalar('max' + postfix_name, max_weight))
+        summary_inputs.append(tf.summary.scalar('mean' + postfix_name, mean_weight))
+
+        flatten_weight = K.flatten(tensor)
+        summary_inputs.append(tf.summary.histogram('histogram' + postfix_name, flatten_weight))
+
     def init_tensorboard(self):
         self.summaries = {}
         self.writer = tf.summary.FileWriter(logdir=self.logdir)
@@ -209,34 +229,20 @@ class RealtimeModel(AbstractRealtimeModel):
         for model_name, model in self.models.iteritems():  # type: Sequential
             with tf.name_scope('%s_statistics' % model_name):
                 summary_inputs = []
-                for layer in model.layers:
+                for i, layer in enumerate(model.layers):
                     with tf.name_scope('layer_%s' % layer.name):
                         for weight in layer.trainable_weights:
                             weight_name = weight.name.split('/')[-1]
                             weight_name = weight_name[:-2] + '_' + weight_name[-1]  # xxx:0 -> xxx_0
                             weight_namescope = 'weight_%s' % weight_name
                             with tf.name_scope(weight_namescope):
-                                min_weight = K.min(weight)
-                                max_weight = K.max(weight)
-                                mean_weight = K.mean(weight)
+                                self.record_in_tensorboard(summary_inputs, '', weight)
 
-                                summary_inputs.append(tf.summary.scalar('min', min_weight))
-                                summary_inputs.append(tf.summary.scalar('max', max_weight))
-                                summary_inputs.append(tf.summary.scalar('mean', mean_weight))
+                        if i == 0:
+                            self.record_in_tensorboard(summary_inputs, 'input', layer.input)
 
-                                flatten_weight = K.flatten(weight)
-                                summary_inputs.append(tf.summary.histogram('histogram', flatten_weight))
+                        self.record_in_tensorboard(summary_inputs, 'layer', layer.output)
 
-                        min_layer = K.min(layer.output)
-                        max_layer = K.max(layer.output)
-                        mean_layer = K.mean(layer.output)
-                        summary_inputs.append(tf.summary.scalar('min_layer', min_layer))
-                        summary_inputs.append(tf.summary.scalar('max_layer', max_layer))
-                        summary_inputs.append(tf.summary.scalar('mean_layer', mean_layer))
-
-                        flatten_layer = K.flatten(layer.output)
-                        summary_inputs.append(tf.summary.histogram('histogram_layer', flatten_layer))
-
-                tf.summary.scalar('total_loss', model.total_loss)
+                summary_inputs.append(tf.summary.scalar('total_loss', model.total_loss))
 
                 self.summaries[model_name] = tf.summary.merge(summary_inputs)
