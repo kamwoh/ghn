@@ -127,7 +127,7 @@ def to_heatmap(img):
             else:
                 img = np.squeeze(img, 2)
 
-            img = plt.cm.jet(img)
+            img = plt.cm.coolwarm(img)
             img = to_255(img)
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
 
