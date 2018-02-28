@@ -21,30 +21,30 @@ def double_thresholding(ghd_layer, inputs):
 
     shape = input_shape[1:] if ghd_layer.per_pixel else (input_shape[-1],)
 
-    r1 = ghd_layer.add_weight(name='r1',
-                              shape=shape,
-                              dtype=K.floatx(),
-                              initializer=initializers.glorot_normal(807),
-                              regularizer=None,
-                              trainable=ghd_layer.double_threshold)
-    r2 = ghd_layer.add_weight(name='r2',
-                              shape=shape,
-                              dtype=K.floatx(),
-                              initializer=initializers.glorot_normal(807),
-                              regularizer=None,
-                              trainable=ghd_layer.double_threshold)
+    rmin = ghd_layer.add_weight(name='rmin',
+                                shape=shape,
+                                dtype=K.floatx(),
+                                initializer=initializers.glorot_normal(807),
+                                regularizer=None,
+                                trainable=ghd_layer.double_threshold)
+    rmax = ghd_layer.add_weight(name='rmax',
+                                shape=shape,
+                                dtype=K.floatx(),
+                                initializer=initializers.glorot_normal(807),
+                                regularizer=None,
+                                trainable=ghd_layer.double_threshold)
 
     if len(input_shape) == 4:
         axis = (1, 2)
     else:
         axis = (1,)
 
-    rmin = K.min(inputs, axis=axis, keepdims=True) * r1
-    rmax = K.max(inputs, axis=axis, keepdims=True) * r2
+    inputs_rmin = K.min(inputs, axis=axis, keepdims=True) * rmin
+    inputs_rmax = K.max(inputs, axis=axis, keepdims=True) * rmax
 
     alpha = ghd_layer.alpha
 
-    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, rmin, rmax)
+    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, inputs_rmin, inputs_rmax)
 
     return hout
 

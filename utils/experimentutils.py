@@ -20,14 +20,14 @@ class SummaryCallback(Callback):
         self.global_steps = global_steps
         self.test_gen = test_gen
 
-    def add_summary(self, epoch):
+    def add_summary(self, steps):
         f = K.function([self.model.layers[0].input] + self.model.targets,
                        [self.summaries])
         x, y = next(self.test_gen)
         x, y = x[np.newaxis, ...], y[np.newaxis, ...]
         random_index = random.choice(range(len(x)))
         summ = f([x[random_index], y[random_index]])[0]
-        self.writer.add_summary(summ, global_step=epoch)
+        self.writer.add_summary(summ, global_step=steps)
 
     def on_train_begin(self, logs=None):
         super(SummaryCallback, self).on_train_begin(logs)
@@ -35,7 +35,7 @@ class SummaryCallback(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         super(SummaryCallback, self).on_epoch_end(epoch, logs)
-        self.add_summary(epoch)
+        self.add_summary(self.global_steps)
 
 
 class AbstractRealtimeModel(object):
@@ -84,6 +84,7 @@ class RealtimeModel(AbstractRealtimeModel):
         self.models_selected_weight_name[model_name + '_weights'] = weights_dict.keys()[0]
 
     def button_onclick(self, button_type):
+        self.setting_window.execute_entry_callback()
         if not self.button_running:
             print('button running now')
             self.button_running = True
@@ -141,7 +142,7 @@ class RealtimeModel(AbstractRealtimeModel):
 
     def entry_callback(self, entry_type, value):
         if entry_type == 'no_epoch':
-            self.training_epoch = int(value)
+            self.no_epoch = int(value)
 
     def get_weight(self, model, weight_idx):
         print('weight idx -> %s, name -> %s' % (weight_idx, model.trainable_weights[weight_idx].name))
@@ -162,17 +163,13 @@ class RealtimeModel(AbstractRealtimeModel):
         out = visutils.activation(img, model, model_layer_idx)
 
         if len(out.shape) == 4:
-            is_conv = True
-            is_fc = False
             out = np.transpose(out, (3, 1, 2, 0))
         else:
-            is_conv = False
-            is_fc = True
             out = np.transpose(out, (1, 0))
 
         print('activation per filter -> %s, heatmap -> %s' % (self.activation_per_filter, self.activation_heatmap))
         out = imageutils.normalize(out, self.activation_per_filter, self.activation_heatmap)
-        disp = imageutils.combine_and_fit(out, is_conv=is_conv, is_fc=is_fc, disp_w=300)
+        disp = imageutils.combine_and_fit(out, disp_w=300)
         return disp
 
     def visualise(self, img):

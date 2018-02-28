@@ -86,7 +86,7 @@ def main():
 
             double_threshold = True
             per_pixel = False
-            alpha = 0.2
+            alpha = 1.0
             ghd_model = ghd_mnist_model(learning_rate, double_threshold, per_pixel, alpha)
             # if os.path.exists('./keras_mnist_ghd.h5'):
             #     ghd_model.load_weights('./keras_mnist_ghd.h5')
