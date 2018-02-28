@@ -39,8 +39,8 @@ def double_thresholding(ghd_layer, inputs):
     else:
         axis = (1,)
 
-    inputs_rmin = K.min(inputs, axis=axis, keepdims=True) * rmin
-    inputs_rmax = K.max(inputs, axis=axis, keepdims=True) * rmax
+    inputs_rmin = K.min(inputs, axis=axis, keepdims=True) * K.sigmoid(rmin)
+    inputs_rmax = K.max(inputs, axis=axis, keepdims=True) * K.sigmoid(rmax)
 
     alpha = ghd_layer.alpha
 

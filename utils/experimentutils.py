@@ -31,11 +31,13 @@ class SummaryCallback(Callback):
 
     def on_train_begin(self, logs=None):
         super(SummaryCallback, self).on_train_begin(logs)
-        self.add_summary(0)
+        if self.global_steps == 1:
+            self.add_summary(0)
 
     def on_epoch_end(self, epoch, logs=None):
         super(SummaryCallback, self).on_epoch_end(epoch, logs)
         self.add_summary(self.global_steps)
+        self.global_steps += 1
 
 
 class AbstractRealtimeModel(object):
@@ -118,7 +120,7 @@ class RealtimeModel(AbstractRealtimeModel):
                                                            self.global_steps,
                                                            self.test_gen)])
 
-        self.global_steps += 1  # epoch
+        self.global_steps += self.no_epoch  # epoch
         # self.global_steps += self.train_gen.n / self.batch_size # batch
 
     def reset(self):
