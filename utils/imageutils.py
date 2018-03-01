@@ -33,7 +33,7 @@ def normalize_image(img, per_image, heatmap):
             new_img = np.zeros(img.shape)
 
         for i in range(img.shape[0]):
-            new_img[i] = normalize_image(img[i], False, heatmap)
+            new_img[i] = normalize_single_image(img[i], heatmap)
 
         return new_img
     else:
@@ -44,6 +44,7 @@ def normalize_single_image(img, heatmap):
     min_pixel = img.min()
     max_pixel = img.max()
     range_pixel = max_pixel - min_pixel + 1e-9
+    print('min -> %s, max -> %s, range -> %s' % (min_pixel, max_pixel, range_pixel))
     out = (img - min_pixel) / range_pixel
     return to_heatmap(out) if heatmap else out
 

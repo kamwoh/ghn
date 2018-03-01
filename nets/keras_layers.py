@@ -49,6 +49,17 @@ def double_thresholding(ghd_layer, inputs):
     return hout
 
 
+class CustomRelu(Layer):
+    def __init__(self, threshold=0.5, sign=1, **kwargs):
+        self.threshold = threshold
+        self.sign = sign
+        super(CustomRelu, self).__init__(**kwargs)
+
+    def call(self, inputs, **kwargs):
+        out = K.relu(self.threshold + inputs * self.sign)
+        return out
+
+
 class ConvGHD(Layer):
     def __init__(self, filters, kernel_size, padding='VALID', double_threshold=True, per_pixel=False, alpha=0.2,
                  **kwargs):

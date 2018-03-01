@@ -1,5 +1,3 @@
-import random
-
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -13,20 +11,20 @@ from gui.window import SettingWindow
 
 
 class SummaryCallback(Callback):
-    def __init__(self, writer, summaries, global_steps, test_gen):
+    def __init__(self, writer, summaries, global_steps, test_gen, interval):
         super(SummaryCallback, self).__init__()
         self.writer = writer  # type: tf.summary.FileWriter
         self.summaries = summaries
         self.global_steps = global_steps
         self.test_gen = test_gen
+        self.interval = interval
 
     def add_summary(self, steps):
-        f = K.function([self.model.layers[0].input] + self.model.targets,
+        # pass
+        f = K.function([self.model.layers[0].input] + self.model.targets + self.model.sample_weights,
                        [self.summaries])
         x, y = next(self.test_gen)
-        x, y = x[np.newaxis, ...], y[np.newaxis, ...]
-        random_index = random.choice(range(len(x)))
-        summ = f([x[random_index], y[random_index]])[0]
+        summ = f([x, y, [None]])[0]
         self.writer.add_summary(summ, global_step=steps)
 
     def on_train_begin(self, logs=None):
@@ -35,7 +33,7 @@ class SummaryCallback(Callback):
             self.add_summary(0)
 
     def on_batch_end(self, batch, logs=None):
-        if batch % 10 == 0:
+        if batch % self.interval == 0:
             self.add_summary(self.global_steps)
             self.global_steps += 1
 
@@ -67,7 +65,7 @@ class RealtimeModel(AbstractRealtimeModel):
         self.train_gen = train_gen
         self.test_gen = test_gen
         self.val_gen = val_gen
-        self.no_epoch = 3
+        self.no_epoch = 2
         self.models = {}
         self.models_layers_dict = {}
         self.models_weights_dict = {}
@@ -123,7 +121,8 @@ class RealtimeModel(AbstractRealtimeModel):
                                 callbacks=[SummaryCallback(self.writer,
                                                            self.summaries[model_name],
                                                            self.global_steps,
-                                                           self.test_gen)])
+                                                           self.test_gen,
+                                                           10)])
 
         self.global_steps += int(self.no_epoch * (self.train_gen.batch_size / self.train_gen.n))  # epoch
         # self.global_steps += self.train_gen.n / self.batch_size # batch
