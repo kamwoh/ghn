@@ -1,3 +1,4 @@
+import threading
 from collections import OrderedDict
 
 import cv2
@@ -147,12 +148,12 @@ def main():
 
             realtime_model.init_tensorboard()
 
-            # thread = threading.Thread(target=visualise_thread, args=(img_input, realtime_model))
-            # thread.setDaemon(True)
-            # thread.start()
+            thread = threading.Thread(target=visualise_thread, args=(img_input, realtime_model))
+            thread.setDaemon(True)
+            thread.start()
 
-            realtime_model.train_on_epoch()
-            # realtime_model.setting_window.mainloop()
+            # realtime_model.train_on_epoch()
+            realtime_model.setting_window.mainloop()
 
     print('closing -> %s' % sess.close())
 

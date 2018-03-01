@@ -20,7 +20,6 @@ class SummaryCallback(Callback):
         self.interval = interval
 
     def add_summary(self, steps):
-        # pass
         f = K.function([self.model.layers[0].input] + self.model.targets + self.model.sample_weights,
                        [self.summaries])
         x, y = next(self.test_gen)
@@ -36,11 +35,6 @@ class SummaryCallback(Callback):
         if batch % self.interval == 0:
             self.add_summary(self.global_steps)
             self.global_steps += 1
-
-    # def on_epoch_end(self, epoch, logs=None):
-    #     super(SummaryCallback, self).on_epoch_end(epoch, logs)
-    #     self.add_summary(self.global_steps)
-    #     self.global_steps += 1
 
 
 class AbstractRealtimeModel(object):
@@ -65,7 +59,7 @@ class RealtimeModel(AbstractRealtimeModel):
         self.train_gen = train_gen
         self.test_gen = test_gen
         self.val_gen = val_gen
-        self.no_epoch = 2
+        self.no_epoch = 1
         self.models = {}
         self.models_layers_dict = {}
         self.models_weights_dict = {}
@@ -122,7 +116,7 @@ class RealtimeModel(AbstractRealtimeModel):
                                                            self.summaries[model_name],
                                                            self.global_steps,
                                                            self.test_gen,
-                                                           10)])
+                                                           100)])
 
         self.global_steps += int(self.no_epoch * (self.train_gen.batch_size / self.train_gen.n))  # epoch
         # self.global_steps += self.train_gen.n / self.batch_size # batch

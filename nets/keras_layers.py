@@ -21,16 +21,18 @@ def double_thresholding(ghd_layer, inputs):
 
     shape = input_shape[1:] if ghd_layer.per_pixel else (input_shape[-1],)
 
+    initializer = initializers.glorot_normal(807) if ghd_layer.double_threshold else initializers.zeros()
+
     rmin = ghd_layer.add_weight(name='rmin',
                                 shape=shape,
                                 dtype=K.floatx(),
-                                initializer=initializers.glorot_normal(807),
+                                initializer=initializer,
                                 regularizer=None,
                                 trainable=ghd_layer.double_threshold)
     rmax = ghd_layer.add_weight(name='rmax',
                                 shape=shape,
                                 dtype=K.floatx(),
-                                initializer=initializers.glorot_normal(807),
+                                initializer=initializer,
                                 regularizer=None,
                                 trainable=ghd_layer.double_threshold)
 
@@ -39,8 +41,8 @@ def double_thresholding(ghd_layer, inputs):
     else:
         axis = (1,)
 
-    inputs_rmin = K.min(inputs, axis=axis, keepdims=True) * K.sigmoid(rmin)
-    inputs_rmax = K.max(inputs, axis=axis, keepdims=True) * K.sigmoid(rmax)
+    inputs_rmin = K.min(inputs, axis=axis, keepdims=True) * K.sigmoid(rmin) * 3
+    inputs_rmax = K.max(inputs, axis=axis, keepdims=True) * K.sigmoid(rmax) * 3
 
     alpha = ghd_layer.alpha
 
