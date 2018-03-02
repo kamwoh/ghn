@@ -46,7 +46,7 @@ def double_thresholding(ghd_layer, inputs):
 
     alpha = ghd_layer.alpha
 
-    hout = 0.5 + (inputs - 0.5) * differentiable_clip(inputs, alpha, inputs_rmin, inputs_rmax)
+    hout = (inputs + 0.5) * differentiable_clip(inputs, alpha, inputs_rmin, inputs_rmax) - 0.5
 
     return hout
 
